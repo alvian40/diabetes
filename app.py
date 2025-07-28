@@ -36,31 +36,10 @@ except Exception as e:
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
     
-    # Custom transformer untuk menambahkan kolom dummy
-    from sklearn.base import BaseEstimator, TransformerMixin
-    class DummyFeatureAdder(BaseEstimator, TransformerMixin):
-        def __init__(self, n_dummy_features=3):  # Ubah dari 2 ke 3
-            self.n_dummy_features = n_dummy_features
-        
-        def fit(self, X, y=None):
-            return self
-        
-        def transform(self, X):
-            import numpy as np
-            # Tambahkan kolom dummy dengan nilai 0
-            dummy_features = np.zeros((X.shape[0], self.n_dummy_features))
-            return np.hstack([X, dummy_features])
-    
-    # Buat pipeline dengan dummy feature adder
-    dummy_transformer = Pipeline(steps=[
-        ('dummy_adder', DummyFeatureAdder(n_dummy_features=3))  # Ubah dari 2 ke 3
-    ])
-    
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
-            ('cat', categorical_transformer, categorical_features),
-            ('dummy', dummy_transformer, [])  # Tidak ada kolom input, hanya menambah dummy
+            ('cat', categorical_transformer, categorical_features)
         ],
         remainder='drop'
     )
@@ -431,9 +410,14 @@ elif halaman == '🧪 Prediksi Diabetes':
                         expected_features = model_dt.n_features_in_
                         st.write(f"Model mengharapkan: {expected_features} fitur")
                         
+                        # Jika jumlah fitur tidak cocok, tambahkan kolom dummy
                         if input_processed.shape[1] != expected_features:
-                            st.error(f"❌ Jumlah fitur tidak cocok! Model mengharapkan {expected_features} fitur, tapi preprocessor menghasilkan {input_processed.shape[1]} fitur.")
-                            st.stop()
+                            st.warning(f"⚠️ Menambahkan {expected_features - input_processed.shape[1]} kolom dummy...")
+                            import numpy as np
+                            # Tambahkan kolom dummy dengan nilai 0
+                            dummy_cols = np.zeros((input_processed.shape[0], expected_features - input_processed.shape[1]))
+                            input_processed = np.hstack([input_processed, dummy_cols])
+                            st.write(f"Jumlah fitur setelah penambahan dummy: {input_processed.shape[1]}")
                         
                         st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
                         prediction = model_dt.predict(input_processed)
