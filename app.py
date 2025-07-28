@@ -32,14 +32,15 @@ except Exception as e:
     
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+        ('onehot', OneHotEncoder(handle_unknown='ignore', drop='first'))  # Drop first untuk mengurangi dimensi
     ])
     
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features)
-        ]
+        ],
+        remainder='drop'  # Drop kolom yang tidak diproses
     )
     
     # Fit preprocessor dengan data dummy
@@ -386,6 +387,11 @@ elif halaman == '🧪 Prediksi Diabetes':
             
             if 'preprocessor' in locals():
                 input_processed = preprocessor.transform(input_df)
+                
+                # Debug: tampilkan info tentang fitur
+                st.write(f"Jumlah fitur input: {input_df.shape[1]}")
+                st.write(f"Jumlah fitur setelah preprocessing: {input_processed.shape[1]}")
+                
                 if 'model_dt' in locals():
                     st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
                     prediction = model_dt.predict(input_processed)
