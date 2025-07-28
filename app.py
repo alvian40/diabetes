@@ -13,7 +13,7 @@ try:
     preprocessor = joblib.load('preprocessor.pkl')
     st.success("✅ Preprocessor berhasil dimuat!")
 except Exception as e:
-    st.warning("⚠ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
+    st.warning("⚠️ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
     
     # Buat preprocessor sederhana sebagai fallback
     from sklearn.pipeline import Pipeline
@@ -32,15 +32,14 @@ except Exception as e:
     
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore', drop='first'))  # Drop first untuk mengurangi dimensi
+        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
     
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features)
-        ],
-        remainder='drop'  # Drop kolom yang tidak diproses
+        ]
     )
     
     # Fit preprocessor dengan data dummy
@@ -48,24 +47,35 @@ except Exception as e:
         # Coba load data training untuk fit
         df_train = pd.read_csv('Dataset/Dataset of Diabetes .csv')
         preprocessor.fit(df_train[numeric_features + categorical_features])
-        st.info("ℹ Preprocessor sederhana telah dibuat dan di-fit dengan data training.")
-    except:
+        st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data training.")
+    except Exception as e:
+        st.warning(f"⚠️ Gagal load data training: {e}. Membuat data dummy...")
         # Jika tidak ada data training, buat data dummy untuk fit
-        dummy_data = pd.DataFrame({
-            'Gender': ['M', 'F'] * 50,
-            'AGE': np.random.randint(20, 80, 100),
-            'Urea': np.random.uniform(1.0, 40.0, 100),
-            'Cr': np.random.randint(10, 1500, 100),
-            'HbA1c': np.random.uniform(3.0, 15.0, 100),
-            'Chol': np.random.uniform(1.0, 10.0, 100),
-            'TG': np.random.uniform(0.1, 10.0, 100),
-            'HDL': np.random.uniform(0.1, 3.0, 100),
-            'LDL': np.random.uniform(0.1, 7.0, 100),
-            'VLDL': np.random.uniform(0.0, 5.0, 100),
-            'BMI': np.random.uniform(15.0, 50.0, 100)
-        })
-        preprocessor.fit(dummy_data[numeric_features + categorical_features])
-        st.info("ℹ Preprocessor sederhana telah dibuat dan di-fit dengan data dummy.")
+        try:
+            dummy_data = pd.DataFrame({
+                'Gender': ['M', 'F'] * 50,
+                'AGE': np.random.randint(20, 80, 100),
+                'Urea': np.random.uniform(1.0, 40.0, 100),
+                'Cr': np.random.randint(10, 1500, 100),
+                'HbA1c': np.random.uniform(3.0, 15.0, 100),
+                'Chol': np.random.uniform(1.0, 10.0, 100),
+                'TG': np.random.uniform(0.1, 10.0, 100),
+                'HDL': np.random.uniform(0.1, 3.0, 100),
+                'LDL': np.random.uniform(0.1, 7.0, 100),
+                'VLDL': np.random.uniform(0.0, 5.0, 100),
+                'BMI': np.random.uniform(15.0, 50.0, 100)
+            })
+            
+            # Pastikan data tidak kosong dan valid
+            if not dummy_data.empty and not dummy_data.isnull().all().all():
+                preprocessor.fit(dummy_data[numeric_features + categorical_features])
+                st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data dummy.")
+            else:
+                st.error("❌ Data dummy tidak valid. Aplikasi tidak dapat berjalan.")
+                st.stop()
+        except Exception as e:
+            st.error(f"❌ Gagal membuat preprocessor: {e}")
+            st.stop()
 
 class_description_mapping = {
     'N': 'No Diabetes',
@@ -109,7 +119,7 @@ if halaman != page_from_query:
 st.markdown("""
 <div style='background: linear-gradient(90deg, #f8fafc 0%, #c3ecfd 100%); border-radius: 28px; padding: 38px 24px 32px 24px; box-shadow: 0 4px 24px #4f8cff22; margin-bottom: 32px;'>
     <div style='text-align:center;'>
-        <span style='font-size:62px;'>🧑‍⚕&nbsp;&nbsp;🩸</span>
+        <span style='font-size:62px;'>🧑‍⚕️&nbsp;&nbsp;🩸</span>
         <div style='font-size:2.1rem; font-weight:900; color:#23395d; margin-bottom:8px; margin-top:18px; letter-spacing:1px; line-height:1.25;'>
             Implementasi Algoritma Decision Tree<br/>
             untuk Prediksi Risiko Diabetes Berdasarkan Data Medis Pasien
@@ -386,51 +396,50 @@ elif halaman == '🧪 Prediksi Diabetes':
             st.write(input_df)
             
             if 'preprocessor' in locals():
-                input_processed = preprocessor.transform(input_df)
-                
-                # Debug: tampilkan info tentang fitur
-                st.write(f"Jumlah fitur input: {input_df.shape[1]}")
-                st.write(f"Jumlah fitur setelah preprocessing: {input_processed.shape[1]}")
-                
-                if 'model_dt' in locals():
-                    st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
-                    prediction = model_dt.predict(input_processed)
-                    prediction_proba = model_dt.predict_proba(input_processed)
-                    predicted_class_label = prediction[0]
-                    # Box warna sesuai hasil
-                    if predicted_class_label == 'Y':
-                        st.markdown("""
-                        <div style='background:#ff5252; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #ff525244;'>⚠ Prediksi Status Diabetes: <span style='color:#fff;'>Diabetes</span></div>
-                        """, unsafe_allow_html=True)
-                        st.markdown("""
-                        <div style='color:#ff5252; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
-                            Tetap semangat! Segera konsultasikan ke dokter untuk penanganan terbaik dan jaga pola hidup sehat.
-                        </div>
-                        """, unsafe_allow_html=True)
-                    elif predicted_class_label == 'N':
-                        st.markdown("""
-                        <div style='background:#43e97b; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #43e97b44;'>✅ Prediksi Status Diabetes: <span style='color:#fff;'>Non Diabetes</span></div>
-                        """, unsafe_allow_html=True)
-                        st.markdown("""
-                        <div style='color:#43e97b; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
-                            Selamat! Anda tidak terindikasi diabetes. Tetap jaga pola makan dan gaya hidup sehat ya!
-                        </div>
-                        """, unsafe_allow_html=True)
-                    elif predicted_class_label == 'P':
-                        st.markdown("""
-                        <div style='background:#4f8cff; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #4f8cff44;'>ℹ Prediksi Status Diabetes: <span style='color:#fff;'>Prediabetes</span></div>
-                        """, unsafe_allow_html=True)
-                        st.markdown("""
-                        <div style='color:#4f8cff; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
-                            Anda berada di tahap prediabetes. Yuk, mulai perbaiki pola makan dan rutin berolahraga agar tetap sehat!
-                        </div>
-                        """, unsafe_allow_html=True)
-                    st.markdown("<h5 style='color:#0d47a1;'>Probabilitas Prediksi</h5>", unsafe_allow_html=True)
-                    predicted_class_names = model_dt.classes_
-                    for i, prob in enumerate(prediction_proba[0]):
-                        st.write(f"{class_description_mapping.get(predicted_class_names[i], predicted_class_names[i])}: {prob:.2%}")
-                else:
-                    st.error("Model belum dimuat dengan benar.")
+                try:
+                    input_processed = preprocessor.transform(input_df)
+                    
+                    if 'model_dt' in locals():
+                        st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
+                        prediction = model_dt.predict(input_processed)
+                        prediction_proba = model_dt.predict_proba(input_processed)
+                        predicted_class_label = prediction[0]
+                        # Box warna sesuai hasil
+                        if predicted_class_label == 'Y':
+                            st.markdown("""
+                            <div style='background:#ff5252; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #ff525244;'>⚠️ Prediksi Status Diabetes: <span style='color:#fff;'>Diabetes</span></div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("""
+                            <div style='color:#ff5252; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
+                                Tetap semangat! Segera konsultasikan ke dokter untuk penanganan terbaik dan jaga pola hidup sehat.
+                            </div>
+                            """, unsafe_allow_html=True)
+                        elif predicted_class_label == 'N':
+                            st.markdown("""
+                            <div style='background:#43e97b; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #43e97b44;'>✅ Prediksi Status Diabetes: <span style='color:#fff;'>Non Diabetes</span></div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("""
+                            <div style='color:#43e97b; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
+                                Selamat! Anda tidak terindikasi diabetes. Tetap jaga pola makan dan gaya hidup sehat ya!
+                            </div>
+                            """, unsafe_allow_html=True)
+                        elif predicted_class_label == 'P':
+                            st.markdown("""
+                            <div style='background:#4f8cff; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #4f8cff44;'>ℹ️ Prediksi Status Diabetes: <span style='color:#fff;'>Prediabetes</span></div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("""
+                            <div style='color:#4f8cff; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
+                                Anda berada di tahap prediabetes. Yuk, mulai perbaiki pola makan dan rutin berolahraga agar tetap sehat!
+                            </div>
+                            """, unsafe_allow_html=True)
+                        st.markdown("<h5 style='color:#0d47a1;'>Probabilitas Prediksi</h5>", unsafe_allow_html=True)
+                        predicted_class_names = model_dt.classes_
+                        for i, prob in enumerate(prediction_proba[0]):
+                            st.write(f"{class_description_mapping.get(predicted_class_names[i], predicted_class_names[i])}: {prob:.2%}")
+                    else:
+                        st.error("Model belum dimuat dengan benar.")
+                except Exception as e:
+                    st.error(f"Terjadi kesalahan saat memproses data: {e}")
             else:
                 st.error("Preprocessor belum dimuat dengan benar.")
 
@@ -445,4 +454,4 @@ st.markdown("""
     <div style='margin-top:40px; background: linear-gradient(90deg, #a18cd1 0%, #fbc2eb 100%); color:#312e81; border-radius:0 0 14px 14px; padding:16px 0; text-align:center; font-size:17px; font-weight:500; letter-spacing:1px;'>
         🌟 <b>Prediksi & Edukasi Diabetes - Bersama Menuju Hidup Sehat!</b> 🌟
     </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)    
