@@ -401,23 +401,16 @@ elif halaman == '🧪 Prediksi Diabetes':
                 try:
                     input_processed = preprocessor.transform(input_df)
                     
-                    # Debug: tampilkan info tentang fitur
-                    st.write(f"Jumlah fitur input: {input_df.shape[1]}")
-                    st.write(f"Jumlah fitur setelah preprocessing: {input_processed.shape[1]}")
-                    
                     if 'model_dt' in locals():
                         # Cek apakah jumlah fitur sesuai dengan yang diharapkan model
                         expected_features = model_dt.n_features_in_
-                        st.write(f"Model mengharapkan: {expected_features} fitur")
                         
                         # Jika jumlah fitur tidak cocok, tambahkan kolom dummy
                         if input_processed.shape[1] != expected_features:
-                            st.warning(f"⚠️ Menambahkan {expected_features - input_processed.shape[1]} kolom dummy...")
                             import numpy as np
                             # Tambahkan kolom dummy dengan nilai 0
                             dummy_cols = np.zeros((input_processed.shape[0], expected_features - input_processed.shape[1]))
                             input_processed = np.hstack([input_processed, dummy_cols])
-                            st.write(f"Jumlah fitur setelah penambahan dummy: {input_processed.shape[1]}")
                         
                         st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
                         prediction = model_dt.predict(input_processed)
