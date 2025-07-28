@@ -11,10 +11,7 @@ model_dt = joblib.load('decision_tree_model.pkl')
 # Coba load preprocessor, jika gagal buat yang sederhana
 try:
     preprocessor = joblib.load('preprocessor.pkl')
-    st.success("✅ Preprocessor berhasil dimuat!")
 except Exception as e:
-    st.warning("⚠️ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
-    
     # Buat preprocessor sederhana sebagai fallback
     from sklearn.pipeline import Pipeline
     from sklearn.compose import ColumnTransformer
@@ -49,9 +46,7 @@ except Exception as e:
         # Coba load data training untuk fit
         df_train = pd.read_csv('Dataset/Dataset of Diabetes .csv')
         preprocessor.fit(df_train[numeric_features + categorical_features])
-        st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data training.")
     except Exception as e:
-        st.warning(f"⚠️ Gagal load data training: {e}. Membuat data dummy...")
         # Jika tidak ada data training, buat data dummy untuk fit
         try:
             dummy_data = pd.DataFrame({
@@ -71,7 +66,6 @@ except Exception as e:
             # Pastikan data tidak kosong dan valid
             if not dummy_data.empty and not dummy_data.isnull().all().all():
                 preprocessor.fit(dummy_data[numeric_features + categorical_features])
-                st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data dummy.")
             else:
                 st.error("❌ Data dummy tidak valid. Aplikasi tidak dapat berjalan.")
                 st.stop()
