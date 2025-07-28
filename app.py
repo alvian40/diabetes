@@ -15,25 +15,24 @@ try:
 except Exception as e:
     st.warning("⚠️ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
     
-    # Buat preprocessor yang sangat sederhana untuk menghindari masalah fitur
+    # Buat preprocessor sederhana sebagai fallback
     from sklearn.pipeline import Pipeline
     from sklearn.compose import ColumnTransformer
+    from sklearn.preprocessing import OneHotEncoder
     
     # Tentukan kolom numerik dan kategorik
     numeric_features = ['AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
     categorical_features = ['Gender']
     
-    # Buat pipeline sederhana tanpa encoding kategorik untuk sementara
+    # Buat pipeline sederhana
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='mean')),
         ('scaler', StandardScaler())
     ])
     
-    # Untuk kategorik, gunakan LabelEncoder sederhana
-    from sklearn.preprocessing import LabelEncoder
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('label_encoder', LabelEncoder())
+        ('onehot', OneHotEncoder(handle_unknown='ignore', drop='first'))  # Drop first untuk mengurangi dimensi
     ])
     
     preprocessor = ColumnTransformer(
@@ -41,7 +40,7 @@ except Exception as e:
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features)
         ],
-        remainder='drop'
+        remainder='drop'  # Drop kolom yang tidak diproses
     )
     
     # Fit preprocessor dengan data dummy
