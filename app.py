@@ -42,7 +42,29 @@ except Exception as e:
         ]
     )
     
-    st.info("ℹ️ Preprocessor sederhana telah dibuat sebagai pengganti.")
+    # Fit preprocessor dengan data dummy
+    try:
+        # Coba load data training untuk fit
+        df_train = pd.read_csv('Dataset/Dataset of Diabetes .csv')
+        preprocessor.fit(df_train[numeric_features + categorical_features])
+        st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data training.")
+    except:
+        # Jika tidak ada data training, buat data dummy untuk fit
+        dummy_data = pd.DataFrame({
+            'Gender': ['M', 'F'] * 50,
+            'AGE': np.random.randint(20, 80, 100),
+            'Urea': np.random.uniform(1.0, 40.0, 100),
+            'Cr': np.random.randint(10, 1500, 100),
+            'HbA1c': np.random.uniform(3.0, 15.0, 100),
+            'Chol': np.random.uniform(1.0, 10.0, 100),
+            'TG': np.random.uniform(0.1, 10.0, 100),
+            'HDL': np.random.uniform(0.1, 3.0, 100),
+            'LDL': np.random.uniform(0.1, 7.0, 100),
+            'VLDL': np.random.uniform(0.0, 5.0, 100),
+            'BMI': np.random.uniform(15.0, 50.0, 100)
+        })
+        preprocessor.fit(dummy_data[numeric_features + categorical_features])
+        st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data dummy.")
 
 class_description_mapping = {
     'N': 'No Diabetes',
