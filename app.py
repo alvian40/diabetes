@@ -2,10 +2,47 @@ import streamlit as st
 import joblib
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
 
 # Muat model dan preprocessor
 model_dt = joblib.load('decision_tree_model.pkl')
-preprocessor = joblib.load('preprocessor.pkl')
+
+# Coba load preprocessor, jika gagal buat yang sederhana
+try:
+    preprocessor = joblib.load('preprocessor.pkl')
+    st.success("✅ Preprocessor berhasil dimuat!")
+except Exception as e:
+    st.warning("⚠️ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
+    
+    # Buat preprocessor sederhana sebagai fallback
+    from sklearn.pipeline import Pipeline
+    from sklearn.compose import ColumnTransformer
+    from sklearn.preprocessing import OneHotEncoder
+    
+    # Tentukan kolom numerik dan kategorik
+    numeric_features = ['AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
+    categorical_features = ['Gender']
+    
+    # Buat pipeline sederhana
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='mean')),
+        ('scaler', StandardScaler())
+    ])
+    
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
+    
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)
+        ]
+    )
+    
+    st.info("ℹ️ Preprocessor sederhana telah dibuat sebagai pengganti.")
 
 class_description_mapping = {
     'N': 'No Diabetes',
