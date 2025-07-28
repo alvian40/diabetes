@@ -15,24 +15,25 @@ try:
 except Exception as e:
     st.warning("⚠️ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
     
-    # Buat preprocessor sederhana sebagai fallback
+    # Buat preprocessor yang sangat sederhana untuk menghindari masalah fitur
     from sklearn.pipeline import Pipeline
     from sklearn.compose import ColumnTransformer
-    from sklearn.preprocessing import OneHotEncoder
     
     # Tentukan kolom numerik dan kategorik
     numeric_features = ['AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
     categorical_features = ['Gender']
     
-    # Buat pipeline sederhana
+    # Buat pipeline sederhana tanpa encoding kategorik untuk sementara
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='mean')),
         ('scaler', StandardScaler())
     ])
     
+    # Untuk kategorik, gunakan LabelEncoder sederhana
+    from sklearn.preprocessing import LabelEncoder
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore', drop='first'))  # Drop first untuk mengurangi dimensi
+        ('label_encoder', LabelEncoder())
     ])
     
     preprocessor = ColumnTransformer(
@@ -40,7 +41,7 @@ except Exception as e:
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features)
         ],
-        remainder='drop'  # Drop kolom yang tidak diproses
+        remainder='drop'
     )
     
     # Fit preprocessor dengan data dummy
@@ -386,15 +387,25 @@ elif halaman == '🧪 Prediksi Diabetes':
             st.write(input_df)
             
             if 'preprocessor' in locals():
-                input_processed = preprocessor.transform(input_df)
-                
-                # Debug: tampilkan info tentang fitur
-                st.write(f"Jumlah fitur input: {input_df.shape[1]}")
-                st.write(f"Jumlah fitur setelah preprocessing: {input_processed.shape[1]}")
-                
-                if 'model_dt' in locals():
-                    st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
-                    prediction = model_dt.predict(input_processed)
+                try:
+                    input_processed = preprocessor.transform(input_df)
+                    
+                    # Debug: tampilkan info tentang fitur
+                    st.write(f"Jumlah fitur input: {input_df.shape[1]}")
+                    st.write(f"Jumlah fitur setelah preprocessing: {input_processed.shape[1]}")
+                    
+                    if 'model_dt' in locals():
+                        # Cek apakah jumlah fitur sesuai dengan yang diharapkan model
+                        expected_features = model_dt.n_features_in_
+                        if input_processed.shape[1] != expected_features:
+                            st.error(f"❌ Jumlah fitur tidak cocok! Model mengharapkan {expected_features} fitur, tapi preprocessor menghasilkan {input_processed.shape[1]} fitur.")
+                            st.stop()
+                        
+                        st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
+                        prediction = model_dt.predict(input_processed)
+                except Exception as e:
+                    st.error(f"❌ Error saat preprocessing data: {e}")
+                    st.stop()
                     prediction_proba = model_dt.predict_proba(input_processed)
                     predicted_class_label = prediction[0]
                     # Box warna sesuai hasil
@@ -445,4 +456,4 @@ st.markdown("""
     <div style='margin-top:40px; background: linear-gradient(90deg, #a18cd1 0%, #fbc2eb 100%); color:#312e81; border-radius:0 0 14px 14px; padding:16px 0; text-align:center; font-size:17px; font-weight:500; letter-spacing:1px;'>
         🌟 <b>Prediksi & Edukasi Diabetes - Bersama Menuju Hidup Sehat!</b> 🌟
     </div>
-""", unsafe_allow_html=True)    
+""", unsafe_allow_html=True)
