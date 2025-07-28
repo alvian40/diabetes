@@ -30,16 +30,37 @@ except Exception as e:
         ('scaler', StandardScaler())
     ])
     
-    # Gunakan OneHotEncoder dengan drop='first' untuk menghasilkan 1 kolom untuk Gender
+    # Gunakan OneHotEncoder tanpa drop untuk menghasilkan 2 kolom untuk Gender (M, F)
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False, drop='first'))
+        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+    ])
+    
+    # Custom transformer untuk menambahkan kolom dummy
+    from sklearn.base import BaseEstimator, TransformerMixin
+    class DummyFeatureAdder(BaseEstimator, TransformerMixin):
+        def __init__(self, n_dummy_features=3):  # Ubah dari 2 ke 3
+            self.n_dummy_features = n_dummy_features
+        
+        def fit(self, X, y=None):
+            return self
+        
+        def transform(self, X):
+            import numpy as np
+            # Tambahkan kolom dummy dengan nilai 0
+            dummy_features = np.zeros((X.shape[0], self.n_dummy_features))
+            return np.hstack([X, dummy_features])
+    
+    # Buat pipeline dengan dummy feature adder
+    dummy_transformer = Pipeline(steps=[
+        ('dummy_adder', DummyFeatureAdder(n_dummy_features=3))  # Ubah dari 2 ke 3
     ])
     
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
-            ('cat', categorical_transformer, categorical_features)
+            ('cat', categorical_transformer, categorical_features),
+            ('dummy', dummy_transformer, [])  # Tidak ada kolom input, hanya menambah dummy
         ],
         remainder='drop'
     )
