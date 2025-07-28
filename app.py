@@ -13,27 +13,26 @@ try:
     preprocessor = joblib.load('preprocessor.pkl')
     st.success("✅ Preprocessor berhasil dimuat!")
 except Exception as e:
-    st.warning("⚠️ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
+    st.warning("⚠ Gagal memuat preprocessor.pkl. Membuat preprocessor sederhana...")
     
-    # Buat preprocessor yang sangat sederhana untuk menghindari masalah fitur
+    # Buat preprocessor sederhana sebagai fallback
     from sklearn.pipeline import Pipeline
     from sklearn.compose import ColumnTransformer
+    from sklearn.preprocessing import OneHotEncoder
     
     # Tentukan kolom numerik dan kategorik
     numeric_features = ['AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
     categorical_features = ['Gender']
     
-    # Buat pipeline sederhana tanpa encoding kategorik untuk sementara
+    # Buat pipeline sederhana
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='mean')),
         ('scaler', StandardScaler())
     ])
     
-    # Untuk kategorik, gunakan LabelEncoder sederhana
-    from sklearn.preprocessing import LabelEncoder
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('label_encoder', LabelEncoder())
+        ('onehot', OneHotEncoder(handle_unknown='ignore', drop='first'))  # Drop first untuk mengurangi dimensi
     ])
     
     preprocessor = ColumnTransformer(
@@ -41,7 +40,7 @@ except Exception as e:
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features)
         ],
-        remainder='drop'
+        remainder='drop'  # Drop kolom yang tidak diproses
     )
     
     # Fit preprocessor dengan data dummy
@@ -49,7 +48,7 @@ except Exception as e:
         # Coba load data training untuk fit
         df_train = pd.read_csv('Dataset/Dataset of Diabetes .csv')
         preprocessor.fit(df_train[numeric_features + categorical_features])
-        st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data training.")
+        st.info("ℹ Preprocessor sederhana telah dibuat dan di-fit dengan data training.")
     except:
         # Jika tidak ada data training, buat data dummy untuk fit
         dummy_data = pd.DataFrame({
@@ -66,7 +65,7 @@ except Exception as e:
             'BMI': np.random.uniform(15.0, 50.0, 100)
         })
         preprocessor.fit(dummy_data[numeric_features + categorical_features])
-        st.info("ℹ️ Preprocessor sederhana telah dibuat dan di-fit dengan data dummy.")
+        st.info("ℹ Preprocessor sederhana telah dibuat dan di-fit dengan data dummy.")
 
 class_description_mapping = {
     'N': 'No Diabetes',
@@ -110,7 +109,7 @@ if halaman != page_from_query:
 st.markdown("""
 <div style='background: linear-gradient(90deg, #f8fafc 0%, #c3ecfd 100%); border-radius: 28px; padding: 38px 24px 32px 24px; box-shadow: 0 4px 24px #4f8cff22; margin-bottom: 32px;'>
     <div style='text-align:center;'>
-        <span style='font-size:62px;'>🧑‍⚕️&nbsp;&nbsp;🩸</span>
+        <span style='font-size:62px;'>🧑‍⚕&nbsp;&nbsp;🩸</span>
         <div style='font-size:2.1rem; font-weight:900; color:#23395d; margin-bottom:8px; margin-top:18px; letter-spacing:1px; line-height:1.25;'>
             Implementasi Algoritma Decision Tree<br/>
             untuk Prediksi Risiko Diabetes Berdasarkan Data Medis Pasien
@@ -387,31 +386,21 @@ elif halaman == '🧪 Prediksi Diabetes':
             st.write(input_df)
             
             if 'preprocessor' in locals():
-                try:
-                    input_processed = preprocessor.transform(input_df)
-                    
-                    # Debug: tampilkan info tentang fitur
-                    st.write(f"Jumlah fitur input: {input_df.shape[1]}")
-                    st.write(f"Jumlah fitur setelah preprocessing: {input_processed.shape[1]}")
-                    
-                    if 'model_dt' in locals():
-                        # Cek apakah jumlah fitur sesuai dengan yang diharapkan model
-                        expected_features = model_dt.n_features_in_
-                        if input_processed.shape[1] != expected_features:
-                            st.error(f"❌ Jumlah fitur tidak cocok! Model mengharapkan {expected_features} fitur, tapi preprocessor menghasilkan {input_processed.shape[1]} fitur.")
-                            st.stop()
-                        
-                        st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
-                        prediction = model_dt.predict(input_processed)
-                except Exception as e:
-                    st.error(f"❌ Error saat preprocessing data: {e}")
-                    st.stop()
+                input_processed = preprocessor.transform(input_df)
+                
+                # Debug: tampilkan info tentang fitur
+                st.write(f"Jumlah fitur input: {input_df.shape[1]}")
+                st.write(f"Jumlah fitur setelah preprocessing: {input_processed.shape[1]}")
+                
+                if 'model_dt' in locals():
+                    st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
+                    prediction = model_dt.predict(input_processed)
                     prediction_proba = model_dt.predict_proba(input_processed)
                     predicted_class_label = prediction[0]
                     # Box warna sesuai hasil
                     if predicted_class_label == 'Y':
                         st.markdown("""
-                        <div style='background:#ff5252; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #ff525244;'>⚠️ Prediksi Status Diabetes: <span style='color:#fff;'>Diabetes</span></div>
+                        <div style='background:#ff5252; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #ff525244;'>⚠ Prediksi Status Diabetes: <span style='color:#fff;'>Diabetes</span></div>
                         """, unsafe_allow_html=True)
                         st.markdown("""
                         <div style='color:#ff5252; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
@@ -429,7 +418,7 @@ elif halaman == '🧪 Prediksi Diabetes':
                         """, unsafe_allow_html=True)
                     elif predicted_class_label == 'P':
                         st.markdown("""
-                        <div style='background:#4f8cff; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #4f8cff44;'>ℹ️ Prediksi Status Diabetes: <span style='color:#fff;'>Prediabetes</span></div>
+                        <div style='background:#4f8cff; color:#fff; border-radius:10px; padding:18px 16px; font-size:1.2rem; font-weight:700; margin-bottom:10px; box-shadow:0 2px 8px #4f8cff44;'>ℹ Prediksi Status Diabetes: <span style='color:#fff;'>Prediabetes</span></div>
                         """, unsafe_allow_html=True)
                         st.markdown("""
                         <div style='color:#4f8cff; font-size:1.1rem; font-weight:500; margin-bottom:18px;'>
