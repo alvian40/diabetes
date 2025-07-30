@@ -268,6 +268,24 @@ if halaman == '🏠 Home':
             <div style='margin-top:18px; color:#388e3c; font-size:16px;'>
                 <b>Tips:</b> Pastikan data yang diinput benar agar hasil prediksi lebih akurat.
             </div>
+            <hr style='margin:32px 0 24px 0; border: none; border-top: 1.5px dashed #bdbdbd;'>
+            <h4 style='color:#0d47a1;'>Panduan Pengisian Data Medis</h4>
+            <ol style='font-size:17px; color:#333; margin-top:18px;'>
+                <li><b>AGE (Usia):</b> Masukkan usia Anda dalam tahun (20-80 tahun).</li>
+                <li><b>Urea (mmol/L):</b> Masukkan kadar urea darah Anda. Urea adalah produk sisa metabolisme protein, penting untuk menilai fungsi ginjal.</li>
+                <li><b>Cr (umol/L):</b> Masukkan kadar kreatinin darah. Kreatinin adalah indikator fungsi ginjal.</li>
+                <li><b>HbA1c (%):</b> Masukkan nilai HbA1c, yaitu rata-rata kadar gula darah selama 2-3 bulan terakhir.</li>
+                <li><b>Chol (mmol/L):</b> Masukkan kadar kolesterol total Anda.</li>
+                <li><b>TG (mmol/L):</b> Masukkan kadar trigliserida, yaitu lemak dalam darah.</li>
+                <li><b>HDL (mmol/L):</b> Masukkan kadar HDL (kolesterol baik).</li>
+                <li><b>LDL (mmol/L):</b> Masukkan kadar LDL (kolesterol jahat).</li>
+                <li><b>VLDL (mmol/L):</b> Masukkan kadar VLDL (lemak jahat dalam darah).</li>
+                <li><b>BMI (kg/m²):</b> Masukkan nilai BMI Anda. BMI adalah indeks massa tubuh, dihitung dari berat dan tinggi badan.</li>
+            </ol>
+            <div style='margin-top:18px; color:#388e3c; font-size:16px;'>
+                <b>Tips:</b> Jika tidak tahu nilai laboratorium Anda, silakan konsultasikan ke dokter atau gunakan hasil pemeriksaan terbaru.
+            </div>
+        </div>
         </div>
         """, unsafe_allow_html=True)
 
