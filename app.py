@@ -68,20 +68,22 @@ def register_user(username, password):
         return False, "Username sudah terdaftar!"
     users_data["users"][username] = password
     save_users(users_data)
-    # Upload users.json ke GitHub setelah register
+    # Upload users.json ke GitHub setelah register (opsional)
     try:
-        GITHUB_TOKEN = st.secrets["github_token"]
-        REPO = st.secrets["github_repo"]
-        PATH_IN_REPO = "users.json"
-        upload_csv_to_github(
-            local_csv_path="users.json",
-            repo=REPO,
-            path_in_repo=PATH_IN_REPO,
-            github_token=GITHUB_TOKEN,
-            commit_message=f"Update users.json - Register user: {username}"
-        )
+        GITHUB_TOKEN = st.secrets.get("github_token")
+        REPO = st.secrets.get("github_repo")
+        if GITHUB_TOKEN and REPO:
+            PATH_IN_REPO = "users.json"
+            upload_csv_to_github(
+                local_csv_path="users.json",
+                repo=REPO,
+                path_in_repo=PATH_IN_REPO,
+                github_token=GITHUB_TOKEN,
+                commit_message=f"Update users.json - Register user: {username}"
+            )
     except Exception as e:
-        st.warning(f"Gagal upload users.json ke GitHub: {e}")
+        # Tidak tampilkan warning jika secrets tidak diatur
+        pass
     return True, "Registrasi berhasil!"
 
 def verify_user(username, password):
@@ -627,20 +629,22 @@ elif halaman == '🧪 Prediksi Diabetes':
                             df_pred.to_csv(riwayat_file, mode='a', header=False, index=False)
                         else:
                             df_pred.to_csv(riwayat_file, mode='w', header=True, index=False)
-                        # Upload ke GitHub setelah update CSV
+                        # Upload ke GitHub setelah update CSV (opsional)
                         try:
-                            GITHUB_TOKEN = st.secrets["github_token"]
-                            REPO = st.secrets["github_repo"]
-                            PATH_IN_REPO = "riwayat_prediksi.csv"
-                            upload_csv_to_github(
-                                local_csv_path=riwayat_file,
-                                repo=REPO,
-                                path_in_repo=PATH_IN_REPO,
-                                github_token=GITHUB_TOKEN,
-                                commit_message=f"Update riwayat prediksi oleh {st.session_state['username']}"
-                            )
+                            GITHUB_TOKEN = st.secrets.get("github_token")
+                            REPO = st.secrets.get("github_repo")
+                            if GITHUB_TOKEN and REPO:
+                                PATH_IN_REPO = "riwayat_prediksi.csv"
+                                upload_csv_to_github(
+                                    local_csv_path=riwayat_file,
+                                    repo=REPO,
+                                    path_in_repo=PATH_IN_REPO,
+                                    github_token=GITHUB_TOKEN,
+                                    commit_message=f"Update riwayat prediksi oleh {st.session_state['username']}"
+                                )
                         except Exception as e:
-                            st.warning(f"Gagal upload ke GitHub: {e}")
+                            # Tidak tampilkan warning jika secrets tidak diatur
+                            pass
                         # Box warna sesuai hasil
                         if predicted_class_label == 'Y':
                             st.markdown("""
