@@ -686,7 +686,7 @@ elif halaman == '🧪 Prediksi Diabetes':
 
     st.markdown("""
     <div style='margin-top:24px; background: linear-gradient(90deg, #fbc2eb 0%, #a1c4fd 100%); color:#23395d; border-radius:12px; padding:18px 22px; font-size:16px; box-shadow:0 2px 8px #a1c4fd33;'>
-        <b>Tips:</b> Data yang Anda masukkan tidak disimpan di server. Gunakan hasil prediksi ini sebagai referensi awal, bukan pengganti konsultasi dokter. Jaga pola hidup sehat dan lakukan pemeriksaan rutin untuk mencegah diabetes!
+        <b>Tips:</b> Gunakan hasil prediksi ini sebagai referensi awal, bukan pengganti konsultasi dokter. Jaga pola hidup sehat dan lakukan pemeriksaan rutin untuk mencegah diabetes!
     </div>
     """, unsafe_allow_html=True)
 
