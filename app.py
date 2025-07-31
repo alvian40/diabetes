@@ -4,6 +4,155 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
+import os
+import json
+import base64
+import requests
+
+# --- AUTENTIKASI SEDERHANA ---
+# Inisialisasi session state untuk autentikasi
+if 'user_logged_in' not in st.session_state:
+    st.session_state['user_logged_in'] = False
+if 'username' not in st.session_state:
+    st.session_state['username'] = ''
+
+# Cek status login dari query parameters (untuk persist setelah refresh)
+def check_login_status():
+    # Cek dari session state
+    if st.session_state['user_logged_in'] and st.session_state['username']:
+        return True
+    
+    # Cek dari query parameters (untuk persist setelah refresh)
+    try:
+        logged_in = st.query_params.get("logged_in", "false")
+        username = st.query_params.get("username", "")
+        if logged_in == "true" and username:
+            st.session_state['user_logged_in'] = True
+            st.session_state['username'] = username
+            return True
+    except:
+        pass
+    
+    return False
+
+def set_login_status(username):
+    st.session_state['user_logged_in'] = True
+    st.session_state['username'] = username
+    # Set query parameters untuk persist
+    st.query_params["logged_in"] = "true"
+    st.query_params["username"] = username
+
+def clear_login_status():
+    st.session_state['user_logged_in'] = False
+    st.session_state['username'] = ''
+    # Clear query parameters
+    if "logged_in" in st.query_params:
+        del st.query_params["logged_in"]
+    if "username" in st.query_params:
+        del st.query_params["username"]
+
+def load_users():
+    try:
+        with open('users.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"users": {}}
+
+def save_users(users_data):
+    with open('users.json', 'w') as f:
+        json.dump(users_data, f, indent=4)
+
+def register_user(username, password):
+    users_data = load_users()
+    if username in users_data["users"]:
+        return False, "Username sudah terdaftar!"
+    users_data["users"][username] = password
+    save_users(users_data)
+    # Upload users.json ke GitHub setelah register
+    try:
+        GITHUB_TOKEN = st.secrets["github_token"]
+        REPO = st.secrets["github_repo"]
+        PATH_IN_REPO = "users.json"
+        upload_csv_to_github(
+            local_csv_path="users.json",
+            repo=REPO,
+            path_in_repo=PATH_IN_REPO,
+            github_token=GITHUB_TOKEN,
+            commit_message=f"Update users.json - Register user: {username}"
+        )
+    except Exception as e:
+        st.warning(f"Gagal upload users.json ke GitHub: {e}")
+    return True, "Registrasi berhasil!"
+
+def verify_user(username, password):
+    users_data = load_users()
+    if username in users_data["users"]:
+        if users_data["users"][username] == password:
+            return True, "Login berhasil!"
+        else:
+            return False, "Password salah!"
+    else:
+        return False, "Username tidak ditemukan!"
+
+def login_form():
+    st.markdown("<h2 style='color:#0d47a1;'>🔐 Login Pengguna</h2>", unsafe_allow_html=True)
+    st.write("Silakan login untuk menggunakan aplikasi dan menyimpan riwayat prediksi Anda.")
+    
+    tab1, tab2 = st.tabs(["Login", "Register"])
+    
+    with tab1:
+        with st.form(key='login_form'):
+            username = st.text_input('Username', max_chars=32)
+            password = st.text_input('Password', type='password', max_chars=32)
+            submit = st.form_submit_button('Login')
+        if submit:
+            if username and password:
+                success, message = verify_user(username, password)
+                if success:
+                    set_login_status(username)
+                    st.success(message)
+                    st.rerun()
+                else:
+                    st.error(message)
+            else:
+                st.error('Username dan password wajib diisi!')
+    
+    with tab2:
+        with st.form(key='register_form'):
+            new_username = st.text_input('Username Baru', max_chars=32)
+            new_password = st.text_input('Password Baru', type='password', max_chars=32)
+            register_submit = st.form_submit_button('Register')
+        if register_submit:
+            if new_username and new_password:
+                success, message = register_user(new_username, new_password)
+                if success:
+                    # Auto login setelah register berhasil
+                    set_login_status(new_username)
+                    st.success(message + " Anda telah otomatis login!")
+                    st.rerun()
+                else:
+                    st.error(message)
+            else:
+                st.error('Username dan password wajib diisi!')
+
+def logout_button():
+    if st.session_state['user_logged_in']:
+        if st.sidebar.button('Logout', use_container_width=True):
+            clear_login_status()
+            st.rerun()
+
+# Cek status login
+if not check_login_status():
+    login_form()
+    st.stop()
+else:
+    # Tampilkan info user yang sedang login
+    st.sidebar.markdown(f"""
+    <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align:center; color:#fff; font-weight:600;'>
+        👤 Logged in as: <br/><span style='font-size:1.1rem;'>{st.session_state['username']}</span>
+    </div>
+    """, unsafe_allow_html=True)
+    logout_button()
 
 # Muat model dan preprocessor
 model_dt = joblib.load('decision_tree_model.pkl')
@@ -79,6 +228,41 @@ class_description_mapping = {
     'Y': 'Diabetes'
 }
 
+# Fungsi upload file ke GitHub
+def upload_csv_to_github(local_file_path, repo, path_in_repo, github_token, commit_message="Update file"):
+    """
+    Mengupload file ke GitHub repository menggunakan GitHub API.
+    """
+    with open(local_file_path, "rb") as f:
+        content = f.read()
+    content_b64 = base64.b64encode(content).decode()
+
+    # Cek apakah file sudah ada di repo (untuk mendapatkan sha)
+    url = f"https://api.github.com/repos/{repo}/contents/{path_in_repo}"
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    get_resp = requests.get(url, headers=headers)
+    if get_resp.status_code == 200:
+        sha = get_resp.json()["sha"]
+    else:
+        sha = None
+
+    data = {
+        "message": commit_message,
+        "content": content_b64,
+        "branch": "main"  # ganti jika branch Anda bukan 'main'
+    }
+    if sha:
+        data["sha"] = sha
+
+    put_resp = requests.put(url, headers=headers, json=data)
+    if put_resp.status_code in [200, 201]:
+        st.success("Berhasil upload file ke GitHub!")
+    else:
+        st.warning(f"Gagal upload ke GitHub: {put_resp.text}")
+
 # --- SIDEBAR NAVBAR ---
 st.sidebar.markdown("""
 <div style='background: linear-gradient(135deg, #23395d 0%, #4f8cff 100%); border-radius: 22px; padding: 32px 0 18px 0; margin-bottom: 18px; box-shadow: 0 4px 24px #4f8cff44; text-align:center;'>
@@ -87,7 +271,7 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-pages = ["🏠 Home", "🧪 Prediksi Diabetes"]
+pages = ["🏠 Home", "🧪 Prediksi Diabetes", "📊 Riwayat Prediksi"]
 
 # Dapatkan halaman dari parameter kueri URL, default ke "🏠 Home" jika tidak ada
 try:
@@ -399,7 +583,8 @@ elif halaman == '🧪 Prediksi Diabetes':
             data_for_df = {
                 'ID': id_pasien,
                 'No_Pation': no_pation,
-                **input_data
+                'Username': st.session_state['username'], # Tambahkan username ke data
+                **input_data  # Tambahkan semua data input user
             }
             
             input_df = pd.DataFrame(data_for_df, index=[0])
@@ -428,6 +613,34 @@ elif halaman == '🧪 Prediksi Diabetes':
                         prediction = model_dt.predict(input_processed)
                         prediction_proba = model_dt.predict_proba(input_processed)
                         predicted_class_label = prediction[0]
+                        # Simpan hasil prediksi ke file CSV tunggal
+                        riwayat_file = 'riwayat_prediksi.csv'
+                        hasil_prediksi = {
+                            **data_for_df,
+                            'Prediksi': predicted_class_label,
+                            'Prob_Non_Diabetes': float(prediction_proba[0][list(model_dt.classes_).index('N')]) if 'N' in model_dt.classes_ else None,
+                            'Prob_Prediabetes': float(prediction_proba[0][list(model_dt.classes_).index('P')]) if 'P' in model_dt.classes_ else None,
+                            'Prob_Diabetes': float(prediction_proba[0][list(model_dt.classes_).index('Y')]) if 'Y' in model_dt.classes_ else None
+                        }
+                        df_pred = pd.DataFrame([hasil_prediksi])
+                        if os.path.exists(riwayat_file):
+                            df_pred.to_csv(riwayat_file, mode='a', header=False, index=False)
+                        else:
+                            df_pred.to_csv(riwayat_file, mode='w', header=True, index=False)
+                        # Upload ke GitHub setelah update CSV
+                        try:
+                            GITHUB_TOKEN = st.secrets["github_token"]
+                            REPO = st.secrets["github_repo"]
+                            PATH_IN_REPO = "riwayat_prediksi.csv"
+                            upload_csv_to_github(
+                                local_csv_path=riwayat_file,
+                                repo=REPO,
+                                path_in_repo=PATH_IN_REPO,
+                                github_token=GITHUB_TOKEN,
+                                commit_message=f"Update riwayat prediksi oleh {st.session_state['username']}"
+                            )
+                        except Exception as e:
+                            st.warning(f"Gagal upload ke GitHub: {e}")
                         # Box warna sesuai hasil
                         if predicted_class_label == 'Y':
                             st.markdown("""
@@ -472,6 +685,73 @@ elif halaman == '🧪 Prediksi Diabetes':
         <b>Tips:</b> Data yang Anda masukkan tidak disimpan di server. Gunakan hasil prediksi ini sebagai referensi awal, bukan pengganti konsultasi dokter. Jaga pola hidup sehat dan lakukan pemeriksaan rutin untuk mencegah diabetes!
     </div>
     """, unsafe_allow_html=True)
+
+elif halaman == '📊 Riwayat Prediksi':
+    st.markdown("<h2 style='color:#0d47a1;'>📊 Riwayat Prediksi Diabetes</h2>", unsafe_allow_html=True)
+    st.write("""
+    Berikut adalah riwayat hasil prediksi yang telah dilakukan. Data ini dapat digunakan untuk analisis dan pengembangan sistem prediksi.
+    """)
+    
+    # Cek apakah file riwayat ada
+    riwayat_file = 'riwayat_prediksi.csv'
+    
+    if os.path.exists(riwayat_file):
+        try:
+            # Baca file riwayat
+            df_riwayat = pd.read_csv(riwayat_file)
+            
+            # Filter data hanya untuk user yang sedang login
+            current_user = st.session_state['username']
+            df_user_riwayat = df_riwayat[df_riwayat['Username'] == current_user]
+            
+            if not df_user_riwayat.empty:
+                # Tampilkan statistik
+                st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
+                
+                # Hitung jumlah prediksi per kategori
+                prediksi_counts = df_user_riwayat['Prediksi'].value_counts()
+                total_prediksi = len(df_user_riwayat)
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("Total Prediksi Anda", total_prediksi)
+                
+                with col2:
+                    diabetes_count = prediksi_counts.get('Y', 0)
+                    st.metric("Diabetes", diabetes_count, f"{diabetes_count/total_prediksi*100:.1f}%")
+                
+                with col3:
+                    non_diabetes_count = prediksi_counts.get('N', 0)
+                    st.metric("Non Diabetes", non_diabetes_count, f"{non_diabetes_count/total_prediksi*100:.1f}%")
+                
+                # Tampilkan tabel riwayat
+                st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
+                
+                # Format data untuk tampilan
+                df_display = df_user_riwayat.copy()
+                df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
+                df_display['Prediksi'] = df_display['Prediksi'].map(class_description_mapping)
+                
+                # Tampilkan tabel dengan pagination
+                st.dataframe(df_display, use_container_width=True)
+                
+                # Tombol download
+                csv = df_user_riwayat.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download Data Riwayat Anda (CSV)",
+                    data=csv,
+                    file_name=f"riwayat_prediksi_{current_user}.csv",
+                    mime="text/csv"
+                )
+                
+            else:
+                st.info("📝 Belum ada data prediksi yang tersimpan untuk user Anda.")
+                
+        except Exception as e:
+            st.error(f"❌ Terjadi kesalahan saat membaca file riwayat: {e}")
+    else:
+        st.info("📝 File riwayat prediksi belum ada. Lakukan prediksi terlebih dahulu untuk melihat riwayat.")
 
 # --- FOOTER ---
 st.markdown("""
