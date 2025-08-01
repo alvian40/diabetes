@@ -673,8 +673,8 @@ elif halaman == '🧪 Prediksi Diabetes':
                                     commit_message=f"Update riwayat prediksi oleh {st.session_state['username']}"
                                 )
                         except Exception as e:
-                            # Tidak tampilkan warning jika secrets tidak diatur
-                            pass
+                            st.warning(f"Gagal upload users.json ke GitHub: {e}")
+                            
                         # Box warna sesuai hasil
                         if predicted_class_label == 'Y':
                             st.markdown("""
