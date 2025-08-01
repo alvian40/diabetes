@@ -9,6 +9,36 @@ import json
 import base64
 import requests
 
+def download_file_from_github(repo, path_in_repo, github_token, local_filename):
+    try:
+        url = f"https://raw.githubusercontent.com/{repo}/main/{path_in_repo}"
+        headers = {"Authorization": f"token {github_token}"}
+        r = requests.get(url, headers=headers)
+        if r.status_code == 200:
+            with open(local_filename, "wb") as f:
+                f.write(r.content)
+            return True
+        else:
+            print("Download failed:", r.text)
+    except Exception as e:
+        print("Error downloading:", e)
+    return False
+
+# === Load file users.json dan riwayat_prediksi.csv saat app pertama kali dijalankan ===
+if "github_repo" in st.secrets and "github_token" in st.secrets:
+    download_file_from_github(
+        repo=st.secrets["github_repo"],
+        path_in_repo="users.json",
+        github_token=st.secrets["github_token"],
+        local_filename="users.json"
+    )
+    download_file_from_github(
+        repo=st.secrets["github_repo"],
+        path_in_repo="riwayat_prediksi.csv",
+        github_token=st.secrets["github_token"],
+        local_filename="riwayat_prediksi.csv"
+    )
+
 # --- AUTENTIKASI SEDERHANA ---
 # Inisialisasi session state untuk autentikasi
 if 'user_logged_in' not in st.session_state:
