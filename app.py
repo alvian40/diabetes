@@ -39,7 +39,6 @@ def download_file_from_github(repo, path_in_repo, github_token, local_filename):
         print("Error downloading:", e)
     return False
 
-
 # --- AUTENTIKASI SEDERHANA ---
 # Inisialisasi session state untuk autentikasi
 if 'user_logged_in' not in st.session_state:
