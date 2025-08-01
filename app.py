@@ -9,36 +9,6 @@ import json
 import base64
 import requests
 
-def download_file_from_github(repo, path_in_repo, github_token, local_filename):
-    try:
-        url = f"https://raw.githubusercontent.com/{repo}/main/{path_in_repo}"
-        headers = {"Authorization": f"token {github_token}"}
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200:
-            with open(local_filename, "wb") as f:
-                f.write(r.content)
-            return True
-        else:
-            print("Download failed:", r.text)
-    except Exception as e:
-        print("Error downloading:", e)
-    return False
-
-# === Load file users.json dan riwayat_prediksi.csv saat app pertama kali dijalankan ===
-if "github_repo" in st.secrets and "github_token" in st.secrets:
-    download_file_from_github(
-        repo=st.secrets["github_repo"],
-        path_in_repo="users.json",
-        github_token=st.secrets["github_token"],
-        local_filename="users.json"
-    )
-    download_file_from_github(
-        repo=st.secrets["github_repo"],
-        path_in_repo="riwayat_prediksi.csv",
-        github_token=st.secrets["github_token"],
-        local_filename="riwayat_prediksi.csv"
-    )
-
 # --- AUTENTIKASI SEDERHANA ---
 # Inisialisasi session state untuk autentikasi
 if 'user_logged_in' not in st.session_state:
@@ -105,7 +75,7 @@ def register_user(username, password):
         if GITHUB_TOKEN and REPO:
             PATH_IN_REPO = "users.json"
             upload_csv_to_github(
-                local_file_path="users.json",
+                local_csv_path="users.json",
                 repo=REPO,
                 path_in_repo=PATH_IN_REPO,
                 github_token=GITHUB_TOKEN,
@@ -666,15 +636,15 @@ elif halaman == '🧪 Prediksi Diabetes':
                             if GITHUB_TOKEN and REPO:
                                 PATH_IN_REPO = "riwayat_prediksi.csv"
                                 upload_csv_to_github(
-                                    local_file_path=riwayat_file,
+                                    local_csv_path=riwayat_file,
                                     repo=REPO,
                                     path_in_repo=PATH_IN_REPO,
                                     github_token=GITHUB_TOKEN,
                                     commit_message=f"Update riwayat prediksi oleh {st.session_state['username']}"
                                 )
                         except Exception as e:
-                            st.warning(f"Gagal upload users.json ke GitHub: {e}")
-                            
+                            # Tidak tampilkan warning jika secrets tidak diatur
+                            pass
                         # Box warna sesuai hasil
                         if predicted_class_label == 'Y':
                             st.markdown("""
