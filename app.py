@@ -105,7 +105,7 @@ def register_user(username, password):
         if GITHUB_TOKEN and REPO:
             PATH_IN_REPO = "users.json"
             upload_csv_to_github(
-                local_csv_path="users.json",
+                local_file_path="users.json",
                 repo=REPO,
                 path_in_repo=PATH_IN_REPO,
                 github_token=GITHUB_TOKEN,
@@ -666,7 +666,7 @@ elif halaman == '🧪 Prediksi Diabetes':
                             if GITHUB_TOKEN and REPO:
                                 PATH_IN_REPO = "riwayat_prediksi.csv"
                                 upload_csv_to_github(
-                                    local_csv_path=riwayat_file,
+                                    local_file_path=riwayat_file,
                                     repo=REPO,
                                     path_in_repo=PATH_IN_REPO,
                                     github_token=GITHUB_TOKEN,
