@@ -655,10 +655,13 @@ try:
             st.metric("Non Diabetes", non_diabetes_count, f"{non_diabetes_count/total_prediksi*100:.1f}%")
                 
                 # Tampilkan tabel riwayat
-                if df_user.empty:
-                    st.info("📝 Belum ada data prediksi yang tersimpan untuk user Anda.")
-                else:
-                    st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
+
+                df_display = df_user.copy()
+                df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
+                df_display['CLASS'] = df_display['CLASS'].map(class_description_mapping)
+
+                st.dataframe(df_display, use_container_width=True)
                                 
                 # Format data untuk tampilan
                 df_display = df_user_riwayat.copy()
