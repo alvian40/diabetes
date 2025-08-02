@@ -618,7 +618,6 @@ elif halaman == '📊 Riwayat Prediksi':
     """)
     
 # --- RIWAYAT PREDIKSI DARI GOOGLE SHEET ---
-
 elif halaman == "📊 Riwayat Prediksi":
     st.markdown("<h2 style='color:#0d47a1;'>📊 Riwayat Prediksi Diabetes</h2>", unsafe_allow_html=True)
     st.write("""
@@ -626,18 +625,23 @@ elif halaman == "📊 Riwayat Prediksi":
     """)
 
     try:
-        # Ambil semua data dari sheet "Riwayat"
+        # Ambil seluruh data dari Sheet "Riwayat"
         records = riwayat_sheet.get_all_records()
         df_user_riwayat = pd.DataFrame(records)
 
-        # Filter hanya untuk user yang sedang login
+        # Pastikan kolom username ada
+        if "username" not in df_user_riwayat.columns:
+            st.error("Kolom 'username' tidak ditemukan di Google Sheet!")
+            st.stop()
+
+        # Filter hanya data milik user yang login (tanpa case sensitive)
         current_user = st.session_state['username']
-        df_user_riwayat = df_user_riwayat[df_user_riwayat['username'] == current_user]
+        df_user_riwayat = df_user_riwayat[df_user_riwayat['username'].str.lower() == current_user.lower()]
 
         if df_user_riwayat.empty:
             st.info("📝 Belum ada data prediksi yang tersimpan untuk user Anda.")
         else:
-            # --- Statistik Prediksi ---
+            # Statistik ringkas
             st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
             prediksi_counts = df_user_riwayat['CLASS'].value_counts()
             total_prediksi = len(df_user_riwayat)
@@ -646,23 +650,18 @@ elif halaman == "📊 Riwayat Prediksi":
             with col1:
                 st.metric("Total Prediksi", total_prediksi)
             with col2:
-                diabetes_count = prediksi_counts.get('Y', 0)
-                st.metric("Diabetes", diabetes_count, f"{diabetes_count / total_prediksi * 100:.1f}%")
+                st.metric("Diabetes", prediksi_counts.get('Y', 0))
             with col3:
-                non_diabetes_count = prediksi_counts.get('N', 0)
-                st.metric("Non Diabetes", non_diabetes_count, f"{non_diabetes_count / total_prediksi * 100:.1f}%")
+                st.metric("Non Diabetes", prediksi_counts.get('N', 0))
 
-            # --- Tabel Riwayat ---
+            # Tampilkan Tabel
             st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
-
             df_display = df_user_riwayat.copy()
             df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
             df_display['CLASS'] = df_display['CLASS'].map(class_description_mapping)
-
-            # Tampilkan tabel
             st.dataframe(df_display, use_container_width=True)
 
-            # Tombol download CSV
+            # Tombol Download CSV
             csv = df_display.to_csv(index=False)
             st.download_button(
                 label="📥 Download Data Riwayat Anda (CSV)",
@@ -670,8 +669,9 @@ elif halaman == "📊 Riwayat Prediksi":
                 file_name=f"riwayat_prediksi_{current_user}.csv",
                 mime="text/csv"
             )
+
     except Exception as e:
-        st.error(f"❌ Terjadi kesalahan saat membaca data riwayat: {e}")
+        st.error(f"❌ Gagal memuat riwayat: {e}")
 
 # --- FOOTER ---
 st.markdown("""
