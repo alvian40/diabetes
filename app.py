@@ -616,13 +616,6 @@ elif halaman == '📊 Riwayat Prediksi':
     st.write("""
     Berikut adalah riwayat hasil prediksi yang telah dilakukan. Data ini dapat digunakan untuk analisis dan pengembangan sistem prediksi.
     """)
-    
-# --- RIWAYAT PREDIKSI DARI GOOGLE SHEET ---
-elif halaman == "📊 Riwayat Prediksi":
-    st.markdown("<h2 style='color:#0d47a1;'>📊 Riwayat Prediksi Diabetes</h2>", unsafe_allow_html=True)
-    st.write("""
-    Berikut adalah riwayat hasil prediksi yang telah dilakukan. Data ini dapat digunakan untuk analisis dan pengembangan sistem prediksi.
-    """)
 
     try:
         # Ambil seluruh data dari Sheet "Riwayat"
