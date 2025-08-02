@@ -545,36 +545,27 @@ elif halaman == '🧪 Prediksi Diabetes':
                         prediction = model_dt.predict(input_processed)
                         prediction_proba = model_dt.predict_proba(input_processed)
                         predicted_class_label = prediction[0]
-                        # Simpan hasil prediksi ke file CSV tunggal
-                        riwayat_file = 'riwayat_prediksi.csv'
-                        hasil_prediksi = {
-                            **data_for_df,
-                            'Prediksi': predicted_class_label,
-                            'Prob_Non_Diabetes': float(prediction_proba[0][list(model_dt.classes_).index('N')]) if 'N' in model_dt.classes_ else None,
-                            'Prob_Prediabetes': float(prediction_proba[0][list(model_dt.classes_).index('P')]) if 'P' in model_dt.classes_ else None,
-                            'Prob_Diabetes': float(prediction_proba[0][list(model_dt.classes_).index('Y')]) if 'Y' in model_dt.classes_ else None
-                        }
-                        df_pred = pd.DataFrame([hasil_prediksi])
-                        if os.path.exists(riwayat_file):
-                            df_pred.to_csv(riwayat_file, mode='a', header=False, index=False)
-                        else:
-                            df_pred.to_csv(riwayat_file, mode='w', header=True, index=False)
-                        # Upload ke GitHub setelah update CSV (opsional)
+                        # Simpan ke Google Sheet tab "Riwayat"
                         try:
-                            GITHUB_TOKEN = st.secrets.get("github_token")
-                            REPO = st.secrets.get("github_repo")
-                            if GITHUB_TOKEN and REPO:
-                                PATH_IN_REPO = "riwayat_prediksi.csv"
-                                upload_csv_to_github(
-                                    local_csv_path=riwayat_file,
-                                    repo=REPO,
-                                    path_in_repo=PATH_IN_REPO,
-                                    github_token=GITHUB_TOKEN,
-                                    commit_message=f"Update riwayat prediksi oleh {st.session_state['username']}"
-                                )
+                            riwayat_sheet.append_row([
+                                st.session_state['username'],
+                                data_for_df['AGE'],
+                                data_for_df['Gender'],
+                                data_for_df['Urea'],
+                                data_for_df['Cr'],
+                                data_for_df['HbA1c'],
+                                data_for_df['Chol'],
+                                data_for_df['TG'],
+                                data_for_df['HDL'],
+                                data_for_df['LDL'],
+                                data_for_df['VLDL'],
+                                data_for_df['BMI'],
+                                predicted_class_label
+                            ])
+                            st.success("✅ Riwayat prediksi berhasil disimpan ke Google Sheet!")
                         except Exception as e:
-                            # Tidak tampilkan warning jika secrets tidak diatur
-                            pass
+                            st.warning(f"Gagal menyimpan riwayat ke Google Sheet: {e}")
+
                         # Box warna sesuai hasil
                         if predicted_class_label == 'Y':
                             st.markdown("""
@@ -626,38 +617,42 @@ elif halaman == '📊 Riwayat Prediksi':
     Berikut adalah riwayat hasil prediksi yang telah dilakukan. Data ini dapat digunakan untuk analisis dan pengembangan sistem prediksi.
     """)
     
-    # Cek apakah file riwayat ada
-    riwayat_file = 'riwayat_prediksi.csv'
-    
-    if os.path.exists(riwayat_file):
-        try:
-            # Baca file riwayat
-            df_riwayat = pd.read_csv(riwayat_file)
-            
-            # Filter data hanya untuk user yang sedang login
-            current_user = st.session_state['username']
-            df_user_riwayat = df_riwayat[df_riwayat['Username'] == current_user]
-            
-            if not df_user_riwayat.empty:
-                # Tampilkan statistik
-                st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
-                
-                # Hitung jumlah prediksi per kategori
-                prediksi_counts = df_user_riwayat['Prediksi'].value_counts()
-                total_prediksi = len(df_user_riwayat)
-                
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.metric("Total Prediksi Anda", total_prediksi)
-                
-                with col2:
-                    diabetes_count = prediksi_counts.get('Y', 0)
-                    st.metric("Diabetes", diabetes_count, f"{diabetes_count/total_prediksi*100:.1f}%")
-                
-                with col3:
-                    non_diabetes_count = prediksi_counts.get('N', 0)
-                    st.metric("Non Diabetes", non_diabetes_count, f"{non_diabetes_count/total_prediksi*100:.1f}%")
+# --- RIWAYAT PREDIKSI DARI GOOGLE SHEET ---
+
+try:
+    # Ambil seluruh data dari worksheet "Riwayat"
+    records = riwayat_sheet.get_all_records()
+
+    # Ubah data menjadi DataFrame
+    df_riwayat = pd.DataFrame(records)
+
+    # Filter data hanya untuk user yang sedang login
+    df_user = df_riwayat[df_riwayat['username'] == st.session_state['username']]
+
+    if df_user.empty:
+        # Jika tidak ada riwayat
+        st.info("📝 Belum ada data prediksi yang tersimpan untuk user Anda.")
+    else:
+        # --- Statistik Ringkas ---
+        st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
+
+        # Hitung jumlah tiap jenis prediksi (N, P, Y)
+        prediksi_counts = df_user['CLASS'].value_counts()
+        total_prediksi = len(df_user)
+
+        # Tampilkan statistik dalam bentuk metrik
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric("Total Prediksi Anda", total_prediksi)
+
+        with col2:
+            diabetes_count = prediksi_counts.get('Y', 0)
+            st.metric("Diabetes", diabetes_count, f"{diabetes_count/total_prediksi*100:.1f}%")
+
+        with col3:
+            non_diabetes_count = prediksi_counts.get('N', 0)
+            st.metric("Non Diabetes", non_diabetes_count, f"{non_diabetes_count/total_prediksi*100:.1f}%")
                 
                 # Tampilkan tabel riwayat
                 st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
