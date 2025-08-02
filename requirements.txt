@@ -6,3 +6,4 @@ streamlit
 gspread
 matplotlib
 seaborn
+oauth2client
