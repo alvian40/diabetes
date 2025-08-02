@@ -5,24 +5,28 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 import os
-import json
 import base64
 import requests
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# Inisialisasi koneksi Google Sheet
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+credentials = ServiceAccountCredentials.from_json_keyfile_name("diabetes-streamlit-caec653fbfef.json", scope)
+client = gspread.authorize(credentials)
+sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1em8HcKtX5pCy53S2_4wc9JBPVkXC3NiVznwvTsDsMpU/edit")
+users_sheet = sheet.worksheet("Users")
+riwayat_sheet = sheet.worksheet("Riwayat")
 
 # --- AUTENTIKASI SEDERHANA ---
-# Inisialisasi session state untuk autentikasi
 if 'user_logged_in' not in st.session_state:
     st.session_state['user_logged_in'] = False
 if 'username' not in st.session_state:
     st.session_state['username'] = ''
 
-# Cek status login dari query parameters (untuk persist setelah refresh)
 def check_login_status():
-    # Cek dari session state
     if st.session_state['user_logged_in'] and st.session_state['username']:
         return True
-    
-    # Cek dari query parameters (untuk persist setelah refresh)
     try:
         logged_in = st.query_params.get("logged_in", "false")
         username = st.query_params.get("username", "")
@@ -32,64 +36,37 @@ def check_login_status():
             return True
     except:
         pass
-    
     return False
 
 def set_login_status(username):
     st.session_state['user_logged_in'] = True
     st.session_state['username'] = username
-    # Set query parameters untuk persist
     st.query_params["logged_in"] = "true"
     st.query_params["username"] = username
 
 def clear_login_status():
     st.session_state['user_logged_in'] = False
     st.session_state['username'] = ''
-    # Clear query parameters
     if "logged_in" in st.query_params:
         del st.query_params["logged_in"]
     if "username" in st.query_params:
         del st.query_params["username"]
 
 def load_users():
-    try:
-        with open('users.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {"users": {}}
-
-def save_users(users_data):
-    with open('users.json', 'w') as f:
-        json.dump(users_data, f, indent=4)
+    data = users_sheet.get_all_records()
+    return {row['username']: row['password'] for row in data}
 
 def register_user(username, password):
-    users_data = load_users()
-    if username in users_data["users"]:
+    users = load_users()
+    if username in users:
         return False, "Username sudah terdaftar!"
-    users_data["users"][username] = password
-    save_users(users_data)
-    # Upload users.json ke GitHub setelah register (opsional)
-    try:
-        GITHUB_TOKEN = st.secrets.get("github_token")
-        REPO = st.secrets.get("github_repo")
-        if GITHUB_TOKEN and REPO:
-            PATH_IN_REPO = "users.json"
-            upload_csv_to_github(
-                local_csv_path="users.json",
-                repo=REPO,
-                path_in_repo=PATH_IN_REPO,
-                github_token=GITHUB_TOKEN,
-                commit_message=f"Update users.json - Register user: {username}"
-            )
-    except Exception as e:
-        # Tidak tampilkan warning jika secrets tidak diatur
-        pass
+    users_sheet.append_row([username, password])
     return True, "Registrasi berhasil!"
 
 def verify_user(username, password):
-    users_data = load_users()
-    if username in users_data["users"]:
-        if users_data["users"][username] == password:
+    users = load_users()
+    if username in users:
+        if users[username] == password:
             return True, "Login berhasil!"
         else:
             return False, "Password salah!"
@@ -99,9 +76,9 @@ def verify_user(username, password):
 def login_form():
     st.markdown("<h2 style='color:#0d47a1;'>🔐 Login Pengguna</h2>", unsafe_allow_html=True)
     st.write("Silakan login untuk menggunakan aplikasi dan menyimpan riwayat prediksi Anda.")
-    
+
     tab1, tab2 = st.tabs(["Login", "Register"])
-    
+
     with tab1:
         with st.form(key='login_form'):
             username = st.text_input('Username', max_chars=32)
@@ -118,7 +95,7 @@ def login_form():
                     st.error(message)
             else:
                 st.error('Username dan password wajib diisi!')
-    
+
     with tab2:
         with st.form(key='register_form'):
             new_username = st.text_input('Username Baru', max_chars=32)
@@ -128,7 +105,6 @@ def login_form():
             if new_username and new_password:
                 success, message = register_user(new_username, new_password)
                 if success:
-                    # Auto login setelah register berhasil
                     set_login_status(new_username)
                     st.success(message + " Anda telah otomatis login!")
                     st.rerun()
@@ -143,12 +119,10 @@ def logout_button():
             clear_login_status()
             st.rerun()
 
-# Cek status login
 if not check_login_status():
     login_form()
     st.stop()
 else:
-    # Tampilkan info user yang sedang login
     st.sidebar.markdown(f"""
     <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align:center; color:#fff; font-weight:600;'>
         👤 Logged in as: <br/><span style='font-size:1.1rem;'>{st.session_state['username']}</span>
@@ -156,34 +130,28 @@ else:
     """, unsafe_allow_html=True)
     logout_button()
 
-# Muat model dan preprocessor
 model_dt = joblib.load('decision_tree_model.pkl')
 
-# Coba load preprocessor, jika gagal buat yang sederhana
 try:
     preprocessor = joblib.load('preprocessor.pkl')
 except Exception as e:
-    # Buat preprocessor sederhana sebagai fallback
     from sklearn.pipeline import Pipeline
     from sklearn.compose import ColumnTransformer
     from sklearn.preprocessing import OneHotEncoder
-    
-    # Tentukan kolom numerik dan kategorik
+
     numeric_features = ['AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
     categorical_features = ['Gender']
-    
-    # Buat pipeline sederhana
+
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='mean')),
         ('scaler', StandardScaler())
     ])
-    
-    # Gunakan OneHotEncoder tanpa drop untuk menghasilkan 2 kolom untuk Gender (M, F)
+
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
-    
+
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
@@ -191,14 +159,11 @@ except Exception as e:
         ],
         remainder='drop'
     )
-    
-    # Fit preprocessor dengan data dummy
+
     try:
-        # Coba load data training untuk fit
         df_train = pd.read_csv('Dataset/Dataset of Diabetes .csv')
         preprocessor.fit(df_train[numeric_features + categorical_features])
     except Exception as e:
-        # Jika tidak ada data training, buat data dummy untuk fit
         try:
             dummy_data = pd.DataFrame({
                 'Gender': ['M', 'F'] * 50,
@@ -213,8 +178,6 @@ except Exception as e:
                 'VLDL': np.random.uniform(0.0, 5.0, 100),
                 'BMI': np.random.uniform(15.0, 50.0, 100)
             })
-            
-            # Pastikan data tidak kosong dan valid
             if not dummy_data.empty and not dummy_data.isnull().all().all():
                 preprocessor.fit(dummy_data[numeric_features + categorical_features])
             else:
@@ -229,41 +192,6 @@ class_description_mapping = {
     'P': 'Prediabetes',
     'Y': 'Diabetes'
 }
-
-# Fungsi upload file ke GitHub
-def upload_csv_to_github(local_file_path, repo, path_in_repo, github_token, commit_message="Update file"):
-    """
-    Mengupload file ke GitHub repository menggunakan GitHub API.
-    """
-    with open(local_file_path, "rb") as f:
-        content = f.read()
-    content_b64 = base64.b64encode(content).decode()
-
-    # Cek apakah file sudah ada di repo (untuk mendapatkan sha)
-    url = f"https://api.github.com/repos/{repo}/contents/{path_in_repo}"
-    headers = {
-        "Authorization": f"token {github_token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    get_resp = requests.get(url, headers=headers)
-    if get_resp.status_code == 200:
-        sha = get_resp.json()["sha"]
-    else:
-        sha = None
-
-    data = {
-        "message": commit_message,
-        "content": content_b64,
-        "branch": "main"  # ganti jika branch Anda bukan 'main'
-    }
-    if sha:
-        data["sha"] = sha
-
-    put_resp = requests.put(url, headers=headers, json=data)
-    if put_resp.status_code in [200, 201]:
-        st.success("Berhasil upload file ke GitHub!")
-    else:
-        st.warning(f"Gagal upload ke GitHub: {put_resp.text}")
 
 # --- SIDEBAR NAVBAR ---
 st.sidebar.markdown("""
