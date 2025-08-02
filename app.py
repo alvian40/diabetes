@@ -619,74 +619,59 @@ elif halaman == '📊 Riwayat Prediksi':
     
 # --- RIWAYAT PREDIKSI DARI GOOGLE SHEET ---
 
-try:
-    # Ambil seluruh data dari worksheet "Riwayat"
-    records = riwayat_sheet.get_all_records()
+elif halaman == "📊 Riwayat Prediksi":
+    st.markdown("<h2 style='color:#0d47a1;'>📊 Riwayat Prediksi Diabetes</h2>", unsafe_allow_html=True)
+    st.write("""
+    Berikut adalah riwayat hasil prediksi yang telah dilakukan. Data ini dapat digunakan untuk analisis dan pengembangan sistem prediksi.
+    """)
 
-    # Ubah data menjadi DataFrame
-    df_riwayat = pd.DataFrame(records)
+    try:
+        # Ambil semua data dari sheet "Riwayat"
+        records = riwayat_sheet.get_all_records()
+        df_user_riwayat = pd.DataFrame(records)
 
-    # Filter data hanya untuk user yang sedang login
-    df_user = df_riwayat[df_riwayat['username'] == st.session_state['username']]
+        # Filter hanya untuk user yang sedang login
+        current_user = st.session_state['username']
+        df_user_riwayat = df_user_riwayat[df_user_riwayat['username'] == current_user]
 
-    if df_user.empty:
-        # Jika tidak ada riwayat
-        st.info("📝 Belum ada data prediksi yang tersimpan untuk user Anda.")
-    else:
-        # --- Statistik Ringkas ---
-        st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
+        if df_user_riwayat.empty:
+            st.info("📝 Belum ada data prediksi yang tersimpan untuk user Anda.")
+        else:
+            # --- Statistik Prediksi ---
+            st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
+            prediksi_counts = df_user_riwayat['CLASS'].value_counts()
+            total_prediksi = len(df_user_riwayat)
 
-        # Hitung jumlah tiap jenis prediksi (N, P, Y)
-        prediksi_counts = df_user['CLASS'].value_counts()
-        total_prediksi = len(df_user)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Prediksi", total_prediksi)
+            with col2:
+                diabetes_count = prediksi_counts.get('Y', 0)
+                st.metric("Diabetes", diabetes_count, f"{diabetes_count / total_prediksi * 100:.1f}%")
+            with col3:
+                non_diabetes_count = prediksi_counts.get('N', 0)
+                st.metric("Non Diabetes", non_diabetes_count, f"{non_diabetes_count / total_prediksi * 100:.1f}%")
 
-        # Tampilkan statistik dalam bentuk metrik
-        col1, col2, col3 = st.columns(3)
+            # --- Tabel Riwayat ---
+            st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
 
-        with col1:
-            st.metric("Total Prediksi Anda", total_prediksi)
+            df_display = df_user_riwayat.copy()
+            df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
+            df_display['CLASS'] = df_display['CLASS'].map(class_description_mapping)
 
-        with col2:
-            diabetes_count = prediksi_counts.get('Y', 0)
-            st.metric("Diabetes", diabetes_count, f"{diabetes_count/total_prediksi*100:.1f}%")
+            # Tampilkan tabel
+            st.dataframe(df_display, use_container_width=True)
 
-        with col3:
-            non_diabetes_count = prediksi_counts.get('N', 0)
-            st.metric("Non Diabetes", non_diabetes_count, f"{non_diabetes_count/total_prediksi*100:.1f}%")
-                
-                # Tampilkan tabel riwayat
-                st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
-
-                df_display = df_user.copy()
-                df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
-                df_display['CLASS'] = df_display['CLASS'].map(class_description_mapping)
-
-                st.dataframe(df_display, use_container_width=True)
-                                
-                # Format data untuk tampilan
-                df_display = df_user_riwayat.copy()
-                df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
-                df_display['Prediksi'] = df_display['Prediksi'].map(class_description_mapping)
-                
-                # Tampilkan tabel dengan pagination
-                st.dataframe(df_display, use_container_width=True)
-                
-                # Tombol download
-                csv = df_user_riwayat.to_csv(index=False)
-                st.download_button(
-                    label="📥 Download Data Riwayat Anda (CSV)",
-                    data=csv,
-                    file_name=f"riwayat_prediksi_{current_user}.csv",
-                    mime="text/csv"
-                )
-                
-            else:
-                st.info("📝 Belum ada data prediksi yang tersimpan untuk user Anda.")
-                
-        except Exception as e:
-            st.error(f"❌ Terjadi kesalahan saat membaca file riwayat: {e}")
-    else:
-        st.info("📝 File riwayat prediksi belum ada. Lakukan prediksi terlebih dahulu untuk melihat riwayat.")
+            # Tombol download CSV
+            csv = df_display.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Data Riwayat Anda (CSV)",
+                data=csv,
+                file_name=f"riwayat_prediksi_{current_user}.csv",
+                mime="text/csv"
+            )
+    except Exception as e:
+        st.error(f"❌ Terjadi kesalahan saat membaca data riwayat: {e}")
 
 # --- FOOTER ---
 st.markdown("""
