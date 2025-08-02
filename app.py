@@ -13,7 +13,7 @@ import json
 
 # Inisialisasi koneksi Google Sheet
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-credentials_dict = json.loads(st.secrets["gcp_service_account"])
+credentials_dict = st.secrets["gcp_service_account"]
 credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope)
 client = gspread.authorize(credentials)
 sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1em8HcKtX5pCy53S2_4wc9JBPVkXC3NiVznwvTsDsMpU/edit")
