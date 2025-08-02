@@ -9,10 +9,12 @@ import base64
 import requests
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import json
 
 # Inisialisasi koneksi Google Sheet
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-credentials = ServiceAccountCredentials.from_json_keyfile_name("diabetes-streamlit-caec653fbfef.json", scope)
+credentials_dict = json.loads(st.secrets["gcp_service_account"])
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope)
 client = gspread.authorize(credentials)
 sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1em8HcKtX5pCy53S2_4wc9JBPVkXC3NiVznwvTsDsMpU/edit")
 users_sheet = sheet.worksheet("Users")
