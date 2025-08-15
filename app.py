@@ -233,8 +233,8 @@ st.markdown("""
     <div style='text-align:center;'>
         <span style='font-size:62px;'>🧑‍⚕️&nbsp;&nbsp;🩸</span>
         <div style='font-size:2.1rem; font-weight:900; color:#23395d; margin-bottom:8px; margin-top:18px; letter-spacing:1px; line-height:1.25;'>
-            Implementasi Algoritma Decision Tree<br/>
-            untuk Prediksi Risiko Diabetes Berdasarkan Data Medis Pasien
+            Aplikasi Prediksi Risiko Diabetes<br/>
+            Berbasis Web untuk Mendukung Kesadaran dan Pencegahan Dini
         </div>
         <div style='font-size:1.1rem; color:#4f8cff; font-weight:500; margin-top:8px;'>
             Bersama Menuju Hidup Sehat & Cegah Komplikasi Sejak Dini
