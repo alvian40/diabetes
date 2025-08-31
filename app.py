@@ -638,12 +638,14 @@ elif halaman == '📊 Riwayat Prediksi':
             prediksi_counts = df_user_riwayat['CLASS'].value_counts()
             total_prediksi = len(df_user_riwayat)
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Total Prediksi", total_prediksi)
             with col2:
                 st.metric("Diabetes", prediksi_counts.get('Y', 0))
             with col3:
+                st.metric("Prediabetes", prediksi_counts.get('P', 0))
+            with col4:
                 st.metric("Non Diabetes", prediksi_counts.get('N', 0))
 
             # Tampilkan Tabel
@@ -652,6 +654,43 @@ elif halaman == '📊 Riwayat Prediksi':
             df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
             df_display['CLASS'] = df_display['CLASS'].map(class_description_mapping)
             st.dataframe(df_display, use_container_width=True)
+            
+            # Tambahkan visualisasi distribusi prediksi
+            st.markdown("<h4 style='color:#1976d2;'>📊 Distribusi Hasil Prediksi</h4>", unsafe_allow_html=True)
+            
+            # Buat chart distribusi
+            import plotly.express as px
+            
+            # Data untuk chart
+            chart_data = pd.DataFrame({
+                'Kategori': ['Diabetes', 'Prediabetes', 'Non Diabetes'],
+                'Jumlah': [
+                    prediksi_counts.get('Y', 0),
+                    prediksi_counts.get('P', 0), 
+                    prediksi_counts.get('N', 0)
+                ]
+            })
+            
+            # Filter hanya kategori yang ada datanya
+            chart_data = chart_data[chart_data['Jumlah'] > 0]
+            
+            if not chart_data.empty:
+                # Buat pie chart
+                fig = px.pie(
+                    chart_data, 
+                    values='Jumlah', 
+                    names='Kategori',
+                    title='Distribusi Hasil Prediksi Diabetes',
+                    color_discrete_map={
+                        'Diabetes': '#ff5252',
+                        'Prediabetes': '#4f8cff', 
+                        'Non Diabetes': '#43e97b'
+                    }
+                )
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("📊 Belum ada data untuk ditampilkan dalam chart")
 
             # Tombol Download CSV
             csv = df_display.to_csv(index=False)
