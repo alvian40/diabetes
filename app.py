@@ -414,7 +414,7 @@ if halaman == '🏠 Home':
                 <li><b>Pengembang:</b> Alvian Widyana Nugraha</li>
                 <li><b>Dosen Pembimbing:</b> Naeli Umniati ST, MMSI</li>
                 <li><b>Framework:</b> Streamlit</li>
-                <li><b>Machine Learning:</b> scikit-learn</li>
+                <li><b>Machine Learning:</b> Scikit-learn, Pandas, NumPy, Joblib, Matplotlib, Seaborn, Gspread, oauth2client </li>
                 <li><b>Ilustrasi:</b> Pixabay, Emoji Unicode</li>
             </ul>
             <div style='margin-top:18px; color:#888; font-size:15px;'>
