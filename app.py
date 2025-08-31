@@ -637,6 +637,16 @@ elif halaman == '📊 Riwayat Prediksi':
             st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
             prediksi_counts = df_user_riwayat['CLASS'].value_counts()
             total_prediksi = len(df_user_riwayat)
+            
+            # Hitung jumlah untuk setiap kategori
+            diabetes_count = prediksi_counts.get('Y', 0)
+            prediabetes_count = prediksi_counts.get('P', 0)
+            non_diabetes_count = prediksi_counts.get('N', 0)
+            
+            # Hitung persentase untuk setiap kategori
+            diabetes_percent = (diabetes_count / total_prediksi * 100) if total_prediksi > 0 else 0
+            prediabetes_percent = (prediabetes_count / total_prediksi * 100) if total_prediksi > 0 else 0
+            non_diabetes_percent = (non_diabetes_count / total_prediksi * 100) if total_prediksi > 0 else 0
 
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -717,4 +727,4 @@ st.markdown("""
     <div style='margin-top:40px; background: linear-gradient(90deg, #a18cd1 0%, #fbc2eb 100%); color:#312e81; border-radius:0 0 14px 14px; padding:16px 0; text-align:center; font-size:17px; font-weight:500; letter-spacing:1px;'>
         🌟 <b>Prediksi & Edukasi Diabetes - Bersama Menuju Hidup Sehat!</b> 🌟
     </div>
-""", unsafe_allow_html=True)    
+""", unsafe_allow_html=True)
