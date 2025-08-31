@@ -658,39 +658,47 @@ elif halaman == '📊 Riwayat Prediksi':
             # Tambahkan visualisasi distribusi prediksi
             st.markdown("<h4 style='color:#1976d2;'>📊 Distribusi Hasil Prediksi</h4>", unsafe_allow_html=True)
             
-            # Buat chart distribusi
-            import plotly.express as px
-            
-            # Data untuk chart
-            chart_data = pd.DataFrame({
-                'Kategori': ['Diabetes', 'Prediabetes', 'Non Diabetes'],
-                'Jumlah': [
-                    prediksi_counts.get('Y', 0),
-                    prediksi_counts.get('P', 0), 
-                    prediksi_counts.get('N', 0)
-                ]
-            })
-            
-            # Filter hanya kategori yang ada datanya
-            chart_data = chart_data[chart_data['Jumlah'] > 0]
-            
-            if not chart_data.empty:
-                # Buat pie chart
-                fig = px.pie(
-                    chart_data, 
-                    values='Jumlah', 
-                    names='Kategori',
-                    title='Distribusi Hasil Prediksi Diabetes',
-                    color_discrete_map={
-                        'Diabetes': '#ff5252',
-                        'Prediabetes': '#4f8cff', 
-                        'Non Diabetes': '#43e97b'
-                    }
-                )
-                fig.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig, use_container_width=True)
+            # Buat visualisasi sederhana dengan Streamlit native
+            if total_prediksi > 0:
+                # Tampilkan bar chart sederhana dengan emoji dan warna
+                st.markdown("""
+                <div style='margin: 20px 0;'>
+                    <h5 style='color:#1976d2; margin-bottom: 15px;'>📈 Ringkasan Visual:</h5>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Bar chart sederhana dengan HTML
+                diabetes_bar = "█" * min(diabetes_count, 20)  # Maksimal 20 karakter
+                prediabetes_bar = "█" * min(prediabetes_count, 20)
+                non_diabetes_bar = "█" * min(non_diabetes_count, 20)
+                
+                col1, col2 = st.columns([1, 3])
+                
+                with col1:
+                    st.markdown("**Diabetes**")
+                with col2:
+                    st.markdown(f"<div style='color:#ff5252; font-family: monospace; font-size: 18px;'>{diabetes_bar} {diabetes_count}</div>", unsafe_allow_html=True)
+                
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    st.markdown("**Prediabetes**")
+                with col2:
+                    st.markdown(f"<div style='color:#4f8cff; font-family: monospace; font-size: 18px;'>{prediabetes_bar} {prediabetes_count}</div>", unsafe_allow_html=True)
+                
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    st.markdown("**Non Diabetes**")
+                with col2:
+                    st.markdown(f"<div style='color:#43e97b; font-family: monospace; font-size: 18px;'>{non_diabetes_bar} {non_diabetes_count}</div>", unsafe_allow_html=True)
+                
+                # Tampilkan persentase
+                st.markdown("---")
+                st.markdown("**📊 Persentase:**")
+                st.markdown(f"• Diabetes: **{diabetes_percent:.1f}%**")
+                st.markdown(f"• Prediabetes: **{prediabetes_percent:.1f}%**")
+                st.markdown(f"• Non Diabetes: **{non_diabetes_percent:.1f}%**")
             else:
-                st.info("📊 Belum ada data untuk ditampilkan dalam chart")
+                st.info("📊 Belum ada data untuk ditampilkan dalam visualisasi")
 
             # Tombol Download CSV
             csv = df_display.to_csv(index=False)
