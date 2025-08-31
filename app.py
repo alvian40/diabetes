@@ -258,7 +258,7 @@ st.markdown("""
 
 if halaman == '🏠 Home':
     # --- NAVBAR TABS HOME ---
-    tab1, tab2, tab3 = st.tabs(["Tentang", "Cara Penggunaan", "Credits"])
+    tab1, tab2, tab3 = st.tabs(["Tentang", "Tutorial", "Credits"])
 
     with tab1:
         st.markdown("""
