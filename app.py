@@ -164,7 +164,9 @@ except Exception as e:
 
     try:
         df_train = pd.read_csv('Dataset/Dataset of Diabetes .csv')
-        preprocessor.fit(df_train[numeric_features + categorical_features])
+        # Pastikan urutan kolom sesuai
+        features_for_fitting = ['Gender', 'AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
+        preprocessor.fit(df_train[features_for_fitting])
     except Exception as e:
         try:
             dummy_data = pd.DataFrame({
@@ -181,7 +183,9 @@ except Exception as e:
                 'BMI': np.random.uniform(15.0, 50.0, 100)
             })
             if not dummy_data.empty and not dummy_data.isnull().all().all():
-                preprocessor.fit(dummy_data[numeric_features + categorical_features])
+                # Pastikan urutan kolom sesuai
+                features_for_fitting = ['Gender', 'AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
+                preprocessor.fit(dummy_data[features_for_fitting])
             else:
                 st.error("❌ Data dummy tidak valid. Aplikasi tidak dapat berjalan.")
                 st.stop()
@@ -527,11 +531,18 @@ elif halaman == '🧪 Prediksi Diabetes':
             
             if 'preprocessor' in locals():
                 try:
-                    input_processed = preprocessor.transform(input_df)
+                    # Pastikan urutan kolom sesuai dengan yang diharapkan preprocessor
+                    features_for_preprocessing = ['Gender', 'AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
+                    input_df_for_preprocessing = input_df[features_for_preprocessing]
+                    
+                    input_processed = preprocessor.transform(input_df_for_preprocessing)
                     
                     if 'model_dt' in locals():
                         # Cek apakah jumlah fitur sesuai dengan yang diharapkan model
                         expected_features = model_dt.n_features_in_
+                        
+                        # Debug: tampilkan informasi fitur
+                        st.info(f"🔍 Debug: Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur")
                         
                         # Jika jumlah fitur tidak cocok, tambahkan kolom dummy
                         if input_processed.shape[1] != expected_features:
@@ -539,6 +550,7 @@ elif halaman == '🧪 Prediksi Diabetes':
                             # Tambahkan kolom dummy dengan nilai 0
                             dummy_cols = np.zeros((input_processed.shape[0], expected_features - input_processed.shape[1]))
                             input_processed = np.hstack([input_processed, dummy_cols])
+                            st.info(f"🔧 Debug: Ditambahkan {expected_features - input_processed.shape[1] + dummy_cols.shape[1]} kolom dummy")
                         
                         st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
                         prediction = model_dt.predict(input_processed)
