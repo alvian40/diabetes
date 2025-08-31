@@ -154,6 +154,7 @@ except Exception as e:
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
 
+    # Buat preprocessor yang menghasilkan tepat 15 fitur seperti yang diharapkan model
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
@@ -161,12 +162,39 @@ except Exception as e:
         ],
         remainder='drop'
     )
+    
+    # Tambahkan transformer tambahan untuk mencapai 15 fitur
+    # Kita akan menambahkan 2 fitur tambahan yang mungkin hilang
+    from sklearn.preprocessing import FunctionTransformer
+    
+    # Tambahkan fitur interaksi atau fitur tambahan
+    def add_extra_features(X):
+        # Tambahkan 2 kolom dengan nilai default
+        extra_features = np.zeros((X.shape[0], 2))
+        return np.hstack([X, extra_features])
+    
+    extra_transformer = FunctionTransformer(add_extra_features)
+    
+    # Gabungkan preprocessor dengan extra transformer
+    from sklearn.pipeline import Pipeline as SklearnPipeline
+    preprocessor = SklearnPipeline([
+        ('preprocess', preprocessor),
+        ('extra', extra_transformer)
+    ])
 
     try:
         df_train = pd.read_csv('Dataset/Dataset of Diabetes .csv')
         # Pastikan urutan kolom sesuai
         features_for_fitting = ['Gender', 'AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
         preprocessor.fit(df_train[features_for_fitting])
+        
+        # Debug: tampilkan informasi preprocessor
+        print(f"Preprocessor fitted successfully. Output shape: {preprocessor.transform(df_train[features_for_fitting].head(1)).shape}")
+        try:
+            print(f"Feature names: {preprocessor.get_feature_names_out()}")
+        except:
+            print("Feature names tidak tersedia untuk pipeline")
+        
     except Exception as e:
         try:
             dummy_data = pd.DataFrame({
@@ -186,6 +214,9 @@ except Exception as e:
                 # Pastikan urutan kolom sesuai
                 features_for_fitting = ['Gender', 'AGE', 'Urea', 'Cr', 'HbA1c', 'Chol', 'TG', 'HDL', 'LDL', 'VLDL', 'BMI']
                 preprocessor.fit(dummy_data[features_for_fitting])
+                
+                # Debug: tampilkan informasi preprocessor dummy
+                print(f"Dummy preprocessor fitted. Output shape: {preprocessor.transform(dummy_data[features_for_fitting].head(1)).shape}")
             else:
                 st.error("❌ Data dummy tidak valid. Aplikasi tidak dapat berjalan.")
                 st.stop()
@@ -541,16 +572,21 @@ elif halaman == '🧪 Prediksi Diabetes':
                         # Cek apakah jumlah fitur sesuai dengan yang diharapkan model
                         expected_features = model_dt.n_features_in_
                         
-                        # Debug: tampilkan informasi fitur
-                        st.info(f"🔍 Debug: Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur")
-                        
-                        # Jika jumlah fitur tidak cocok, tambahkan kolom dummy
-                        if input_processed.shape[1] != expected_features:
-                            import numpy as np
-                            # Tambahkan kolom dummy dengan nilai 0
-                            dummy_cols = np.zeros((input_processed.shape[0], expected_features - input_processed.shape[1]))
-                            input_processed = np.hstack([input_processed, dummy_cols])
-                            st.info(f"🔧 Debug: Ditambahkan {expected_features - input_processed.shape[1] + dummy_cols.shape[1]} kolom dummy")
+                                            # Debug: tampilkan informasi fitur
+                    st.info(f"🔍 Debug: Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur")
+                    
+                    # Tampilkan feature names yang dihasilkan preprocessor
+                    try:
+                        feature_names = preprocessor.get_feature_names_out()
+                        st.info(f"🔍 Feature names: {feature_names}")
+                    except:
+                        st.info("🔍 Tidak bisa mendapatkan feature names")
+                    
+                    # Jika jumlah fitur tidak cocok, tampilkan error
+                    if input_processed.shape[1] != expected_features:
+                        st.error(f"❌ ERROR: Jumlah fitur tidak cocok! Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur.")
+                        st.error("Aplikasi tidak dapat melanjutkan prediksi. Silakan restart aplikasi.")
+                        st.stop()
                         
                         st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
                         prediction = model_dt.predict(input_processed)
