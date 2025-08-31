@@ -415,7 +415,6 @@ if halaman == '🏠 Home':
                 <li><b>Dosen Pembimbing:</b> Naeli Umniati ST, MMSI</li>
                 <li><b>Framework:</b> Streamlit</li>
                 <li><b>Machine Learning:</b> Scikit-learn, Pandas, NumPy, Joblib, Matplotlib, Seaborn, Gspread, oauth2client </li>
-                <li><b>Ilustrasi:</b> Pixabay, Emoji Unicode</li>
             </ul>
             <div style='margin-top:18px; color:#888; font-size:15px;'>
                 &copy; 2025 | Prediksi Diabetes ML
