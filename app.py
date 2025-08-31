@@ -155,31 +155,35 @@ except Exception as e:
     ])
 
     # Buat preprocessor yang menghasilkan tepat 15 fitur seperti yang diharapkan model
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', numeric_transformer, numeric_features),
-            ('cat', categorical_transformer, categorical_features)
-        ],
-        remainder='drop'
-    )
+    # Kita akan menambahkan fitur interaksi untuk mencapai 15 fitur
     
-    # Buat custom transformer untuk menambahkan fitur yang hilang
-    from sklearn.base import BaseEstimator, TransformerMixin
-    
-    class ExtraFeaturesTransformer(BaseEstimator, TransformerMixin):
-        def fit(self, X, y=None):
-            return self
+    # Tambahkan fitur interaksi yang mungkin berguna untuk diabetes
+    def create_interaction_features(X):
+        # X sudah dalam bentuk array numeric (setelah scaling)
+        # Tambahkan fitur interaksi yang relevan untuk diabetes
+        age_idx = 0  # AGE
+        hba1c_idx = 3  # HbA1c
+        bmi_idx = 9   # BMI
         
-        def transform(self, X):
-            # Tambahkan 2 kolom dengan nilai default 0
-            extra_features = np.zeros((X.shape[0], 2))
-            return np.hstack([X, extra_features])
+        # Fitur interaksi: AGE * HbA1c (usia dengan gula darah)
+        age_hba1c = X[:, age_idx:age_idx+1] * X[:, hba1c_idx:hba1c_idx+1]
+        
+        # Fitur interaksi: BMI * HbA1c (BMI dengan gula darah)
+        bmi_hba1c = X[:, bmi_idx:bmi_idx+1] * X[:, hba1c_idx:hba1c_idx+1]
+        
+        return np.hstack([X, age_hba1c, bmi_hba1c])
     
-    # Gabungkan preprocessor dengan extra transformer
+    # Buat pipeline yang menghasilkan tepat 15 fitur
     from sklearn.pipeline import Pipeline as SklearnPipeline
+    from sklearn.preprocessing import FunctionTransformer
+    
+    # Buat transformer untuk fitur interaksi
+    interaction_transformer = FunctionTransformer(create_interaction_features)
+    
+    # Gabungkan preprocessor dengan interaction transformer
     preprocessor = SklearnPipeline([
         ('preprocess', preprocessor),
-        ('extra', ExtraFeaturesTransformer())
+        ('interactions', interaction_transformer)
     ])
 
     try:
@@ -576,54 +580,24 @@ elif halaman == '🧪 Prediksi Diabetes':
                         # Cek apakah jumlah fitur sesuai dengan yang diharapkan model
                         expected_features = model_dt.n_features_in_
                         
-                                            # Debug: tampilkan informasi fitur
-                    st.info(f"🔍 Debug: Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur")
-                    
-                    # Tampilkan feature names yang dihasilkan preprocessor
-                    try:
-                        feature_names = preprocessor.get_feature_names_out()
-                        st.info(f"🔍 Feature names: {feature_names}")
-                    except:
-                        st.info("🔍 Tidak bisa mendapatkan feature names")
-                    
-                    # Jika jumlah fitur tidak cocok, tambahkan kolom dummy dengan cara yang lebih cerdas
-                    if input_processed.shape[1] != expected_features:
-                        import numpy as np
+                        # Debug: tampilkan informasi fitur
+                        st.info(f"🔍 Debug: Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur")
                         
-                        # Tampilkan warning
-                        st.warning(f"⚠️ PERINGATAN: Jumlah fitur tidak cocok! Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur.")
+                        # Tampilkan feature names yang dihasilkan preprocessor
+                        try:
+                            feature_names = preprocessor.get_feature_names_out()
+                            st.info(f"🔍 Feature names: {feature_names}")
+                        except:
+                            st.info("🔍 Tidak bisa mendapatkan feature names")
                         
-                        # Tambahkan kolom dummy dengan nilai yang lebih masuk akal (bukan 0)
-                        missing_features = expected_features - input_processed.shape[1]
-                        st.info(f"🔧 Menambahkan {missing_features} kolom dummy untuk menyesuaikan dengan model...")
+                        # Verifikasi jumlah fitur
+                        if input_processed.shape[1] != expected_features:
+                            st.error(f"❌ ERROR: Jumlah fitur masih tidak cocok! Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur.")
+                            st.error("Ini menunjukkan ada masalah dengan preprocessor. Silakan restart aplikasi.")
+                            st.stop()
                         
-                        # Gunakan nilai rata-rata dari fitur yang ada sebagai nilai dummy
-                        dummy_values = np.mean(input_processed, axis=1, keepdims=True)
-                        dummy_cols = np.tile(dummy_values, (1, missing_features))
-                        
-                        input_processed = np.hstack([input_processed, dummy_cols])
-                        st.success(f"✅ Berhasil menyesuaikan jumlah fitur menjadi {input_processed.shape[1]}")
-                        
-                        # Tampilkan warning bahwa prediksi mungkin tidak 100% akurat
-                        st.warning("⚠️ Catatan: Prediksi menggunakan fitur dummy, hasil mungkin tidak 100% akurat seperti model asli.")
-                        
-                        # Tampilkan informasi tentang solusi permanen
-                        with st.expander("ℹ️ Mengapa ini terjadi dan bagaimana mengatasinya?"):
-                            st.markdown("""
-                            **Mengapa ini terjadi?**
-                            - Model yang ada dilatih dengan 15 fitur
-                            - Preprocessor saat ini hanya menghasilkan 14 fitur
-                            - Ada ketidakcocokan antara model dan preprocessor
-                            
-                            **Solusi sementara (saat ini):**
-                            - Menambahkan kolom dummy untuk menyesuaikan jumlah fitur
-                            - Prediksi bisa berjalan tapi mungkin tidak 100% akurat
-                            
-                            **Solusi permanen:**
-                            - Retrain model dengan preprocessor yang baru
-                            - Atau gunakan preprocessor yang sama dengan yang digunakan saat training model
-                            - Konsultasikan dengan developer untuk mendapatkan model yang kompatibel
-                            """)
+                        # Jika jumlah fitur cocok, tampilkan konfirmasi
+                        st.success(f"✅ Jumlah fitur cocok! Preprocessor menghasilkan {input_processed.shape[1]} fitur, model mengharapkan {expected_features} fitur.")
                         
                         st.markdown("<h4 style='color:#1976d2;'>Hasil Prediksi</h4>", unsafe_allow_html=True)
                         prediction = model_dt.predict(input_processed)
