@@ -180,9 +180,18 @@ except Exception as e:
     # Buat transformer untuk fitur interaksi
     interaction_transformer = FunctionTransformer(create_interaction_features)
     
+    # Buat preprocessor dasar terlebih dahulu
+    base_preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)
+        ],
+        remainder='drop'
+    )
+    
     # Gabungkan preprocessor dengan interaction transformer
     preprocessor = SklearnPipeline([
-        ('preprocess', preprocessor),
+        ('preprocess', base_preprocessor),
         ('interactions', interaction_transformer)
     ])
 
