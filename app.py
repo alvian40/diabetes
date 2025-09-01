@@ -784,16 +784,64 @@ elif halaman == '📊 Riwayat Prediksi':
             # Tambahkan CSS untuk membuat teks di tabel rata tengah
             st.markdown("""
             <style>
-            .stDataFrame > div {
+            /* CSS untuk Streamlit DataFrame */
+            div[data-testid="stDataFrame"] table {
                 text-align: center !important;
             }
+            div[data-testid="stDataFrame"] th {
+                text-align: center !important;
+                vertical-align: middle !important;
+            }
+            div[data-testid="stDataFrame"] td {
+                text-align: center !important;
+                vertical-align: middle !important;
+            }
+            div[data-testid="stDataFrame"] thead th {
+                text-align: center !important;
+            }
+            div[data-testid="stDataFrame"] tbody td {
+                text-align: center !important;
+            }
+            /* CSS alternatif untuk versi Streamlit yang berbeda */
             .stDataFrame table {
                 text-align: center !important;
             }
             .stDataFrame th {
                 text-align: center !important;
+                vertical-align: middle !important;
             }
             .stDataFrame td {
+                text-align: center !important;
+                vertical-align: middle !important;
+            }
+            /* CSS untuk semua elemen dalam tabel */
+            div[data-testid="stDataFrame"] * {
+                text-align: center !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            # Tambahkan CSS global untuk memastikan semua teks di tabel rata tengah
+            st.markdown("""
+            <style>
+            /* CSS Global untuk semua tabel */
+            .stDataFrame, div[data-testid="stDataFrame"] {
+                text-align: center !important;
+            }
+            .stDataFrame table, div[data-testid="stDataFrame"] table {
+                text-align: center !important;
+                margin: 0 auto !important;
+            }
+            .stDataFrame th, div[data-testid="stDataFrame"] th {
+                text-align: center !important;
+                vertical-align: middle !important;
+            }
+            .stDataFrame td, div[data-testid="stDataFrame"] td {
+                text-align: center !important;
+                vertical-align: middle !important;
+            }
+            /* CSS untuk semua elemen dalam tabel */
+            .stDataFrame *, div[data-testid="stDataFrame"] * {
                 text-align: center !important;
             }
             </style>
