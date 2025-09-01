@@ -164,12 +164,24 @@ else:
     
     if current_username in user_data:
         user_info = user_data[current_username]
-        birth_date_str = user_info.get('birth_date', '')
-        gender = user_info.get('gender', '')
+        
+
+        
+        # Ambil data dengan berbagai kemungkinan nama kolom
+        birth_date_str = (user_info.get('birth_date', '') or 
+                         user_info.get('Birth_Date', '') or 
+                         user_info.get('tanggal_lahir', '') or 
+                         user_info.get('Tanggal_Lahir', ''))
+        
+        gender = (user_info.get('gender', '') or 
+                 user_info.get('Gender', '') or 
+                 user_info.get('jenis_kelamin', '') or 
+                 user_info.get('Jenis_Kelamin', ''))
+        
         age = calculate_age(birth_date_str)
         
         # Format tanggal lahir untuk ditampilkan
-        if birth_date_str:
+        if birth_date_str and birth_date_str.strip():
             try:
                 from datetime import datetime
                 birth_date_obj = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
@@ -177,10 +189,13 @@ else:
             except:
                 formatted_birth_date = birth_date_str
         else:
-            formatted_birth_date = "Tidak tersedia"
+            formatted_birth_date = "Belum diisi"
         
         # Format gender
-        gender_display = "Laki-laki" if gender == 'M' else "Perempuan" if gender == 'F' else "Tidak tersedia"
+        if gender and gender.strip():
+            gender_display = "Laki-laki" if gender.upper() == 'M' else "Perempuan" if gender.upper() == 'F' else gender
+        else:
+            gender_display = "Belum diisi"
         
         # Tampilkan ucapan selamat datang
         st.markdown(f"""
@@ -191,10 +206,57 @@ else:
             <div style='background: rgba(255,255,255,0.2); border-radius:12px; padding:16px; margin-top:16px;'>
                 <div style='font-size:1rem; margin-bottom:8px;'><strong>👤 Jenis Kelamin:</strong> {gender_display}</div>
                 <div style='font-size:1rem; margin-bottom:8px;'><strong>📅 Tanggal Lahir:</strong> {formatted_birth_date}</div>
-                <div style='font-size:1rem;'><strong>🎂 Usia:</strong> {age if age else "Tidak dapat dihitung"} tahun</div>
+                <div style='font-size:1rem;'><strong>🎂 Usia:</strong> {age if age else "Belum dapat dihitung"} tahun</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Jika data tidak lengkap, tampilkan form untuk melengkapi profil
+        if gender_display == "Belum diisi" or formatted_birth_date == "Belum diisi":
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align:center; color:#333;'>
+                <div style='font-size:1.2rem; font-weight:600; margin-bottom:12px;'>📝 Lengkapi Profil Anda</div>
+                <div style='font-size:1rem;'>Silakan lengkapi data profil Anda untuk pengalaman yang lebih baik</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.expander("🔧 Update Profil", expanded=True):
+                with st.form(key='update_profile_form'):
+                    st.write("**Lengkapi data profil Anda:**")
+                    update_gender = st.selectbox(
+                        'Jenis Kelamin', 
+                        (None, 'M', 'F'), 
+                        format_func=lambda x: 'Pilih jenis kelamin' if x is None else ('Laki-laki' if x == 'M' else 'Perempuan'),
+                        help="Pilih jenis kelamin Anda."
+                    )
+                    update_birth_date = st.date_input(
+                        'Tanggal Lahir',
+                        value=None,
+                        min_value=pd.Timestamp('1900-01-01').date(),
+                        max_value=pd.Timestamp('today').date(),
+                        help="Pilih tanggal lahir Anda"
+                    )
+                    update_submit = st.form_submit_button('Update Profil')
+                    
+                    if update_submit:
+                        if update_gender and update_birth_date:
+                            # Update data di Google Sheet
+                            try:
+                                # Cari baris user yang login
+                                records = users_sheet.get_all_records()
+                                for i, record in enumerate(records):
+                                    if record.get('username') == current_username:
+                                        # Update data
+                                        row_num = i + 2  # +2 karena header dan index dimulai dari 1
+                                        users_sheet.update_cell(row_num, 3, update_gender)  # Kolom gender
+                                        users_sheet.update_cell(row_num, 4, update_birth_date.strftime('%Y-%m-%d'))  # Kolom birth_date
+                                        st.success("✅ Profil berhasil diperbarui!")
+                                        st.rerun()
+                                        break
+                            except Exception as e:
+                                st.error(f"❌ Gagal memperbarui profil: {e}")
+                        else:
+                            st.error("Harap isi semua field!")
     
     st.sidebar.markdown(f"""
     <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align:center; color:#fff; font-weight:600;'>
