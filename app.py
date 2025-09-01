@@ -629,7 +629,7 @@ elif halaman == '🧪 Prediksi Diabetes':
                         # Simpan ke Google Sheet tab "Riwayat"
                         try:
                             from datetime import datetime
-                            tanggal_prediksi = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            tanggal_prediksi = datetime.now().strftime('%d %B %Y')
                             riwayat_sheet.append_row([
                                 st.session_state['username'],
                                 data_for_df['AGE'],
