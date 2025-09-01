@@ -748,8 +748,9 @@ elif halaman == '📊 Riwayat Prediksi':
             st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
             df_display = df_user_riwayat.copy()
             
-            # Tambahkan kolom No dengan urutan dari 1
-            df_display.insert(0, 'No', range(1, len(df_display) + 1))
+            # Ubah index menjadi kolom No dengan urutan dari 1
+            df_display.index = range(1, len(df_display) + 1)
+            df_display.index.name = 'No'
             
             df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
             df_display['Hasil'] = df_display['Hasil'].map(class_description_mapping)
