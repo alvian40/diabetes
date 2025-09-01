@@ -631,8 +631,6 @@ elif halaman == '🧪 Prediksi Diabetes':
                             from datetime import datetime
                             # Pastikan format tanggal tanpa jam
                             tanggal_prediksi = datetime.now().strftime('%d %B %Y')
-                            # Debug: tampilkan format tanggal yang akan disimpan
-                            st.write(f"Debug - Format tanggal yang disimpan: '{tanggal_prediksi}'")
                             riwayat_sheet.append_row([
                                 st.session_state['username'],
                                 data_for_df['AGE'],
@@ -749,6 +747,10 @@ elif halaman == '📊 Riwayat Prediksi':
             # Tampilkan Tabel
             st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
             df_display = df_user_riwayat.copy()
+            
+            # Tambahkan kolom No dengan urutan dari 1
+            df_display.insert(0, 'No', range(1, len(df_display) + 1))
+            
             df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
             df_display['Hasil'] = df_display['Hasil'].map(class_description_mapping)
             
