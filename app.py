@@ -781,6 +781,24 @@ elif halaman == '📊 Riwayat Prediksi':
                 
                 df_display['Tanggal Prediksi'] = df_display['Tanggal Prediksi'].apply(format_tanggal_prediksi)
             
+            # Tambahkan CSS untuk membuat teks di tabel rata tengah
+            st.markdown("""
+            <style>
+            .stDataFrame > div {
+                text-align: center !important;
+            }
+            .stDataFrame table {
+                text-align: center !important;
+            }
+            .stDataFrame th {
+                text-align: center !important;
+            }
+            .stDataFrame td {
+                text-align: center !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
             st.dataframe(df_display, use_container_width=True)
             
 
