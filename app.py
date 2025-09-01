@@ -58,11 +58,11 @@ def load_users():
     data = users_sheet.get_all_records()
     return {row['username']: row['password'] for row in data}
 
-def register_user(username, password, age, gender):
+def register_user(username, password, age, gender, birth_date):
     users = load_users()
     if username in users:
         return False, "Username sudah terdaftar!"
-    users_sheet.append_row([username, password, age, gender])
+    users_sheet.append_row([username, password, age, gender, birth_date])
     return True, "Registrasi berhasil!"
 
 def verify_user(username, password):
@@ -109,10 +109,17 @@ def login_form():
                 format_func=lambda x: 'Pilih jenis kelamin' if x is None else ('Laki-laki' if x == 'M' else 'Perempuan'),
                 help="Pilih jenis kelamin Anda."
             )
+            new_birth_date = st.date_input(
+                'Tanggal Lahir',
+                value=None,
+                min_value=pd.Timestamp('1900-01-01').date(),
+                max_value=pd.Timestamp('today').date(),
+                help="Pilih tanggal lahir Anda"
+            )
             register_submit = st.form_submit_button('Register')
         if register_submit:
-            if new_username and new_password and new_age is not None and new_gender:
-                success, message = register_user(new_username, new_password, new_age, new_gender)
+            if new_username and new_password and new_age is not None and new_gender and new_birth_date:
+                success, message = register_user(new_username, new_password, new_age, new_gender, new_birth_date)
                 if success:
                     set_login_status(new_username)
                     st.success(message + " Anda telah otomatis login!")
@@ -120,7 +127,7 @@ def login_form():
                 else:
                     st.error(message)
             else:
-                st.error('Semua field wajib diisi! (Username, Password, Usia, dan Jenis Kelamin)')
+                st.error('Semua field wajib diisi! (Username, Password, Usia, Jenis Kelamin, dan Tanggal Lahir)')
 
 def logout_button():
     if st.session_state['user_logged_in']:
