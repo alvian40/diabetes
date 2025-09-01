@@ -629,12 +629,15 @@ elif halaman == '🧪 Prediksi Diabetes':
                         # Simpan ke Google Sheet tab "Riwayat"
                         try:
                             from datetime import datetime
+                            # Pastikan format tanggal tanpa jam
                             tanggal_prediksi = datetime.now().strftime('%d %B %Y')
+                            # Debug: tampilkan format tanggal yang akan disimpan
+                            st.write(f"Debug - Format tanggal yang disimpan: '{tanggal_prediksi}'")
                             riwayat_sheet.append_row([
                                 st.session_state['username'],
                                 data_for_df['AGE'],
                                 data_for_df['Gender'],
-                                tanggal_prediksi,
+                                tanggal_prediksi,  # Format: "1 September 2025"
                                 data_for_df['Urea'],
                                 data_for_df['Cr'],
                                 data_for_df['HbA1c'],
@@ -748,6 +751,33 @@ elif halaman == '📊 Riwayat Prediksi':
             df_display = df_user_riwayat.copy()
             df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
             df_display['Hasil'] = df_display['Hasil'].map(class_description_mapping)
+            
+            # Format ulang kolom Tanggal Prediksi jika ada
+            if 'Tanggal Prediksi' in df_display.columns:
+                def format_tanggal_prediksi(tanggal_str):
+                    if pd.isna(tanggal_str) or tanggal_str == '':
+                        return tanggal_str
+                    try:
+                        # Coba format yang sudah benar (1 September 2025)
+                        if ' ' in str(tanggal_str) and not any(char.isdigit() and int(char) > 23 for char in str(tanggal_str).split()):
+                            return tanggal_str
+                        # Format yang lama dengan jam (2025-09-01 12:07:59)
+                        elif ' ' in str(tanggal_str) and ':' in str(tanggal_str):
+                            from datetime import datetime
+                            dt = datetime.strptime(str(tanggal_str), '%Y-%m-%d %H:%M:%S')
+                            return dt.strftime('%d %B %Y')
+                        # Format tanggal saja (2025-09-01)
+                        elif '-' in str(tanggal_str) and len(str(tanggal_str)) == 10:
+                            from datetime import datetime
+                            dt = datetime.strptime(str(tanggal_str), '%Y-%m-%d')
+                            return dt.strftime('%d %B %Y')
+                        else:
+                            return tanggal_str
+                    except:
+                        return tanggal_str
+                
+                df_display['Tanggal Prediksi'] = df_display['Tanggal Prediksi'].apply(format_tanggal_prediksi)
+            
             st.dataframe(df_display, use_container_width=True)
             
 
