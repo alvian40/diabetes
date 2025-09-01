@@ -628,10 +628,13 @@ elif halaman == '🧪 Prediksi Diabetes':
                         predicted_class_label = prediction[0]
                         # Simpan ke Google Sheet tab "Riwayat"
                         try:
+                            from datetime import datetime
+                            tanggal_prediksi = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             riwayat_sheet.append_row([
                                 st.session_state['username'],
                                 data_for_df['AGE'],
                                 data_for_df['Gender'],
+                                tanggal_prediksi,
                                 data_for_df['Urea'],
                                 data_for_df['Cr'],
                                 data_for_df['HbA1c'],
@@ -717,7 +720,7 @@ elif halaman == '📊 Riwayat Prediksi':
         else:
             # Statistik ringkas
             st.markdown("<h4 style='color:#1976d2;'>📈 Statistik Prediksi Anda</h4>", unsafe_allow_html=True)
-            prediksi_counts = df_user_riwayat['CLASS'].value_counts()
+            prediksi_counts = df_user_riwayat['Hasil'].value_counts()
             total_prediksi = len(df_user_riwayat)
             
             # Hitung jumlah untuk setiap kategori
@@ -744,7 +747,7 @@ elif halaman == '📊 Riwayat Prediksi':
             st.markdown("<h4 style='color:#1976d2;'>📋 Data Riwayat Prediksi Anda</h4>", unsafe_allow_html=True)
             df_display = df_user_riwayat.copy()
             df_display['Gender'] = df_display['Gender'].map({'M': 'Laki-laki', 'F': 'Perempuan'})
-            df_display['CLASS'] = df_display['CLASS'].map(class_description_mapping)
+            df_display['Hasil'] = df_display['Hasil'].map(class_description_mapping)
             st.dataframe(df_display, use_container_width=True)
             
 
