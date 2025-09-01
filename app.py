@@ -58,6 +58,24 @@ def load_users():
     data = users_sheet.get_all_records()
     return {row['username']: row['password'] for row in data}
 
+def load_user_data():
+    """Load semua data user termasuk tanggal lahir"""
+    data = users_sheet.get_all_records()
+    return {row['username']: row for row in data}
+
+def calculate_age(birth_date_str):
+    """Hitung usia dari tanggal lahir"""
+    if not birth_date_str:
+        return None
+    try:
+        from datetime import datetime
+        birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+        today = datetime.now().date()
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        return age
+    except:
+        return None
+
 def register_user(username, password, gender, birth_date):
     users = load_users()
     if username in users:
@@ -140,6 +158,44 @@ if not check_login_status():
     login_form()
     st.stop()
 else:
+    # Tampilkan informasi user yang login
+    current_username = st.session_state['username']
+    user_data = load_user_data()
+    
+    if current_username in user_data:
+        user_info = user_data[current_username]
+        birth_date_str = user_info.get('birth_date', '')
+        gender = user_info.get('gender', '')
+        age = calculate_age(birth_date_str)
+        
+        # Format tanggal lahir untuk ditampilkan
+        if birth_date_str:
+            try:
+                from datetime import datetime
+                birth_date_obj = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+                formatted_birth_date = birth_date_obj.strftime('%d %B %Y')
+            except:
+                formatted_birth_date = birth_date_str
+        else:
+            formatted_birth_date = "Tidak tersedia"
+        
+        # Format gender
+        gender_display = "Laki-laki" if gender == 'M' else "Perempuan" if gender == 'F' else "Tidak tersedia"
+        
+        # Tampilkan ucapan selamat datang
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align:center; color:#fff; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);'>
+            <div style='font-size:2.5rem; margin-bottom:16px;'>🎉</div>
+            <div style='font-size:1.8rem; font-weight:700; margin-bottom:8px;'>Selamat Datang, {current_username}!</div>
+            <div style='font-size:1.1rem; opacity:0.9; margin-bottom:16px;'>Kami senang Anda bergabung dengan kami</div>
+            <div style='background: rgba(255,255,255,0.2); border-radius:12px; padding:16px; margin-top:16px;'>
+                <div style='font-size:1rem; margin-bottom:8px;'><strong>👤 Jenis Kelamin:</strong> {gender_display}</div>
+                <div style='font-size:1rem; margin-bottom:8px;'><strong>📅 Tanggal Lahir:</strong> {formatted_birth_date}</div>
+                <div style='font-size:1rem;'><strong>🎂 Usia:</strong> {age if age else "Tidak dapat dihitung"} tahun</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.sidebar.markdown(f"""
     <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align:center; color:#fff; font-weight:600;'>
         👤 Logged in as: <br/><span style='font-size:1.1rem;'>{st.session_state['username']}</span>
