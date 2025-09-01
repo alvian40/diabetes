@@ -709,7 +709,7 @@ elif halaman == '📊 Riwayat Prediksi':
 
         # Pastikan kolom username ada
         if "username" not in df_user_riwayat.columns:
-            st.error("Kolom 'username' tidak ditemukan di Google Sheet!")
+            st.error("Kamu Belum Melakukan Prediksi. Silahkan Melakukan Prediksi Dulu Yaaa!!!")
             st.stop()
 
         # Filter hanya data milik user yang login (tanpa case sensitive)
