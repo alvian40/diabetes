@@ -62,7 +62,9 @@ def register_user(username, password, age, gender, birth_date):
     users = load_users()
     if username in users:
         return False, "Username sudah terdaftar!"
-    users_sheet.append_row([username, password, age, gender, birth_date])
+    # Konversi birth_date menjadi string untuk menghindari error JSON serialization
+    birth_date_str = birth_date.strftime('%Y-%m-%d') if birth_date else None
+    users_sheet.append_row([username, password, age, gender, birth_date_str])
     return True, "Registrasi berhasil!"
 
 def verify_user(username, password):
