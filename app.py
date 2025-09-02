@@ -196,7 +196,7 @@ else:
         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align:center; color:#fff; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);'>
             <div style='font-size:2.5rem; margin-bottom:16px;'>🎉</div>
             <div style='font-size:1.8rem; font-weight:700; margin-bottom:8px;'>Selamat Datang, {current_username}!</div>
-            <div style='font-size:1.1rem; opacity:0.9; margin-bottom:16px;'>Kami senang Anda bergabung dengan kami</div>
+            <div style='font-size:1.1rem; opacity:0.9; margin-bottom:16px;'>Kami senang Anda menggunakan teknologi kami</div>
             <div style='background: rgba(255,255,255,0.2); border-radius:12px; padding:16px; margin-top:16px;'>
                 <div style='font-size:1rem; margin-bottom:8px;'><strong>👤 Jenis Kelamin:</strong> {gender_display}</div>
                 <div style='font-size:1rem; margin-bottom:8px;'><strong>📅 Tanggal Lahir:</strong> {formatted_birth_date}</div>
