@@ -494,7 +494,8 @@ if halaman == '🏠 Home':
             <h3 style='color:#0d47a1;'>Credits</h3>
             <ul style='font-size:17px; color:#333; margin-top:18px;'>
                 <li><b>Pengembang:</b> Alvian Widyana Nugraha</li>
-                <li><b>Dosen Pembimbing:</b> Naeli Umniati ST, MMSI</li>
+                <li><b>Dosen Pembimbing:</b> Dr. Naeli Umniati., S.T., MMSI.</li>
+                <li><b>Dosen Pembimbing:</b> Universitas Gunadarma</li>
                 <li><b>Framework:</b> Streamlit</li>
                 <li><b>Machine Learning:</b> Scikit-learn, Pandas, NumPy, Joblib, Matplotlib, Seaborn, Gspread, oauth2client </li>
             </ul>
