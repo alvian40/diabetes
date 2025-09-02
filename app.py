@@ -493,11 +493,11 @@ if halaman == '🏠 Home':
         <div style='background:#fff; border-radius:14px; box-shadow:0 1px 6px #0001; padding:28px 24px; max-width:700px; margin:auto;'>
             <h3 style='color:#0d47a1;'>Credits</h3>
             <ul style='font-size:17px; color:#333; margin-top:18px;'>
-                <li><b>Pengembang:</b> Alvian Widyana Nugraha</li>
-                <li><b>Dosen Pembimbing:</b> Dr. Naeli Umniati., S.T., MMSI.</li>
-                <li><b>Dosen Pembimbing:</b> Universitas Gunadarma</li>
-                <li><b>Framework:</b> Streamlit</li>
-                <li><b>Machine Learning:</b> Scikit-learn, Pandas, NumPy, Joblib, Matplotlib, Seaborn, Gspread, oauth2client </li>
+                <li><b>Pengembang :</b> Alvian Widyana Nugraha</li>
+                <li><b>Dosen Pembimbing :</b> Dr. Naeli Umniati., S.T., MMSI.</li>
+                <li><b>Instansi :</b> Universitas Gunadarma</li>
+                <li><b>Framework :</b> Streamlit</li>
+                <li><b>Machine Learning :</b> Scikit-learn, Pandas, NumPy, Joblib, Matplotlib, Seaborn, Gspread, oauth2client </li>
             </ul>
             <div style='margin-top:18px; color:#888; font-size:15px;'>
                 &copy; 2025 | Prediksi Diabetes ML
